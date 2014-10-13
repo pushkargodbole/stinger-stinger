@@ -21,6 +21,7 @@ extern "C" {
 #include "stinger_utils/metisish_support.h"
 #include "stinger_utils/json_support.h"
 #include "stinger_utils/csv.h"
+#include "server-cmd.h"
 }
 
 using namespace gt::stinger;
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
   int port_streams = port_names + 1;
   int port_algs = port_names + 2;
   int unleash_daemon = 0;
+  int kill_daemon = 0;
 
   graph_name = (char *) xmalloc (128*sizeof(char));
   sprintf(graph_name, "/stinger-default");
@@ -59,7 +61,7 @@ int main(int argc, char *argv[])
 
   /* parse command line configuration */
   int opt = 0;
-  while(-1 != (opt = getopt(argc, argv, "a:s:p:b:n:i:t:1h?dkvc:f:"))) {
+  while(-1 != (opt = getopt(argc, argv, "a:s:p:b:n:i:t:1h?dKkvc:f:"))) {
     switch(opt) {
       case 'p': {
 		  port_names = atoi(optarg);
@@ -106,6 +108,9 @@ int main(int argc, char *argv[])
       case 'd': {
 		  unleash_daemon = 1;
 		} break;
+      case 'K': {
+                  kill_daemon = 1;
+		} break;
 
       case '?':
       case 'h': {
@@ -117,7 +122,7 @@ int main(int argc, char *argv[])
 			 "   [-i input_file_path]\n"
 			 "   [-t file_type]\n"
 			 "   [-1 (for numeric IDs)]\n"
-			 "   [-d daemon mode]\n"
+			 "   [-d daemon mode] [-K kill the daemon]\n"
 			 "   [-k write algorithm states to disk]\n"
 			 "   [-v write vertex name mapping to disk]\n"
 			 "   [-f output directory for vertex names, alg states]\n"
@@ -131,6 +136,11 @@ int main(int argc, char *argv[])
 
   /* print configuration to the terminal */
   printf("\tName: %s\n", graph_name);
+
+  if (kill_daemon) {
+    send_quit (graph_name);
+    return EXIT_SUCCESS;
+  }
 
   /* If being a "daemon" (after a fashion), wait on the child to finish initializing and then exit. */
   if (unleash_daemon) {
@@ -250,9 +260,12 @@ int main(int argc, char *argv[])
 
   if(unleash_daemon) {
     int exitcode = EXIT_SUCCESS;
+    int sock;
     write (start_pipe[1], &exitcode, sizeof (exitcode));
     close (start_pipe[1]);
-    while(1) { sleep(10); }
+    sock = make_control_socket (graph_name);
+    server_loop (sock);
+    unlink_control_socket (graph_name, sock);
   } else {
     printf("Press <q> to shut down the server...\n");
     while (getchar() != 'q');
