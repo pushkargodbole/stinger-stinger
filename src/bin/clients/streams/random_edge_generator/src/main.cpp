@@ -19,6 +19,10 @@ extern "C" {
 #include "random_edge_generator.h"
 #include "build_name.h"
 
+/* Avoid "requiring" C++11 */
+#if !defined(INT64_MAX)
+#define INT64_MAX 0x7fffffffffffffffLL
+#endif
 
 using namespace gt::stinger;
 
