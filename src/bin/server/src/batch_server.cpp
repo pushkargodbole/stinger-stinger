@@ -64,7 +64,7 @@ handle_stream(void * args)
 }
 
 void *
-start_tcp_batch_server (void * args)
+start_tcp_batch_server (void * ready_mutex)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
@@ -75,7 +75,6 @@ start_tcp_batch_server (void * args)
   pthread_t garbage_thread_handle;
   socklen_t clilen;
   struct sockaddr_in serv_addr, cli_addr;
-  pid_t pid;
 
   if (-1 == (sock_handle = socket(AF_INET, SOCK_STREAM, 0))) {
     perror("Socket create failed.\n");
@@ -103,7 +102,19 @@ start_tcp_batch_server (void * args)
       (int)port_streams);
 
   pthread_t alg_handling;
-  pthread_create(&alg_handling, NULL, start_alg_handling, NULL);
+  pthread_mutex_t alg_ready_mutex = PTHREAD_MUTEX_INITIALIZER;
+  if (pthread_mutex_init (&alg_ready_mutex, NULL)) {
+    perror ("alg handling mutex");
+    exit (EXIT_FAILURE);
+  }
+  pthread_mutex_lock (&alg_ready_mutex);
+  pthread_create(&alg_handling, NULL, start_alg_handling, &alg_ready_mutex);
+
+  pthread_mutex_lock (&alg_ready_mutex);
+  pthread_mutex_unlock (&alg_ready_mutex);
+  pthread_mutex_destroy (&alg_ready_mutex);
+
+  pthread_mutex_unlock ((pthread_mutex_t*)ready_mutex);
 
   while (1) {
     newsockfd = accept (sock_handle, (struct sockaddr *) &cli_addr, &clilen);

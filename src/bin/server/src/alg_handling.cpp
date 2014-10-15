@@ -285,11 +285,13 @@ new_connection_handler(void * data)
 }
 
 void *
-process_loop_handler(void * data)
+process_loop_handler(void * ready_mutex)
 {
   LOG_V("Main loop thread started");
 
   StingerServerState & server_state = StingerServerState::get_server_state();
+
+  pthread_mutex_unlock ((pthread_mutex_t*)ready_mutex);
 
   while(1) { /* TODO clean shutdown mechanism */
     StingerBatch * batch = server_state.dequeue_batch();
@@ -687,7 +689,7 @@ process_loop_handler(void * data)
 }
 
 void *
-start_alg_handling(void *)
+start_alg_handling(void *ready_mutex)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
@@ -717,8 +719,20 @@ start_alg_handling(void *)
   LOG_V("Spawning the main loop thread");
 
   pthread_t main_loop_thread;
-  pthread_create(&main_loop_thread, NULL, &process_loop_handler, NULL);
+  pthread_mutex_t main_loop_ready_mutex = PTHREAD_MUTEX_INITIALIZER;
+  if (pthread_mutex_init (&main_loop_ready_mutex, NULL)) {
+    perror ("main loop mutex");
+    exit (EXIT_FAILURE);
+  }
+  pthread_mutex_lock (&main_loop_ready_mutex);
+  pthread_create(&main_loop_thread, NULL, &process_loop_handler, &main_loop_ready_mutex);
   server_state.set_main_loop_thread(main_loop_thread);
+
+  pthread_mutex_lock (&main_loop_ready_mutex);
+  pthread_mutex_unlock (&main_loop_ready_mutex);
+  pthread_mutex_destroy (&main_loop_ready_mutex);
+
+  pthread_mutex_unlock ((pthread_mutex_t*)ready_mutex);
 
   /* ENABLE ME for a quick empty batch test */
   /*

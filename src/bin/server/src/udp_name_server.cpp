@@ -17,7 +17,7 @@ void error(const char *msg)
 }
 
 void *
-start_udp_graph_name_server (void * args)
+start_udp_graph_name_server (void * ready_mutex)
 {
   StingerServerState & server_state = StingerServerState::get_server_state();
 
@@ -55,6 +55,7 @@ start_udp_graph_name_server (void * args)
   fromlen = sizeof(struct sockaddr_in);
 
   printf("Server listening on port %d\n", port + 1);
+  pthread_mutex_unlock ((pthread_mutex_t*)ready_mutex);
 
   while (1) {
     n = recvfrom(sock, buf, 1024, 0, (struct sockaddr *) &from, &fromlen);

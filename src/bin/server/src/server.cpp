@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sched.h>
 
 #include "server.h"
 #include "stinger_net/stinger_server_state.h"
@@ -238,16 +239,37 @@ int main(int argc, char *argv[])
   server_state.set_stinger_sz(graph_sz);
   server_state.set_port(port_names, port_streams, port_algs);
   server_state.set_mon_stinger(graph_name, sizeof(stinger_t) + S->length);
- 
-  /* this thread will handle the shared memory name mapping */
-  pthread_create (&name_pid, NULL, start_udp_graph_name_server, NULL);
-
-  /* this thread will handle the batch & alg servers */
-  /* TODO: bring the thread creation for the alg server to this level */
-  pthread_create (&batch_pid, NULL, start_tcp_batch_server, NULL);
 
   {
-    /* Inform the parent that we're ready for connections. */
+    pthread_mutex_t gname_thread_ready = PTHREAD_MUTEX_INITIALIZER;
+    if (pthread_mutex_init (&gname_thread_ready, NULL)) {
+      perror ("batch thread mutex");
+      exit (EXIT_FAILURE);
+    }
+    pthread_mutex_lock (&gname_thread_ready);
+    /* this thread will handle the shared memory name mapping */
+    pthread_create (&name_pid, NULL, start_udp_graph_name_server, &gname_thread_ready);
+
+    pthread_mutex_t batch_thread_ready = PTHREAD_MUTEX_INITIALIZER;
+    if (pthread_mutex_init (&batch_thread_ready, NULL)) {
+      perror ("batch thread mutex");
+      exit (EXIT_FAILURE);
+    }
+    pthread_mutex_lock (&batch_thread_ready);
+    /* this thread will handle the batch & alg servers */
+    /* TODO: Eliminate threads. */
+    pthread_create (&batch_pid, NULL, start_tcp_batch_server, &batch_thread_ready);
+
+    /* Wait until the threads start... */
+    pthread_mutex_lock (&gname_thread_ready);
+    pthread_mutex_lock (&batch_thread_ready);
+    pthread_mutex_unlock (&gname_thread_ready);
+    pthread_mutex_unlock (&batch_thread_ready);
+    pthread_mutex_destroy (&gname_thread_ready);
+    pthread_mutex_destroy (&batch_thread_ready);
+  }
+
+  {
     struct sigaction sa;
     sa.sa_flags = 0;
     sigemptyset (&sa.sa_mask);
@@ -261,6 +283,7 @@ int main(int argc, char *argv[])
   if(unleash_daemon) {
     int exitcode = EXIT_SUCCESS;
     int sock;
+    /* Inform the parent that we're ready for connections. */
     write (start_pipe[1], &exitcode, sizeof (exitcode));
     close (start_pipe[1]);
     sock = make_control_socket (graph_name);
@@ -279,15 +302,12 @@ int main(int argc, char *argv[])
 void
 cleanup (void)
 {
-  printf("Shutting down the name server..."); fflush(stdout);
-  int status;
-  kill(name_pid, SIGTERM);
-  waitpid(name_pid, &status, 0);
-  printf(" done.\n"); fflush(stdout);
-
-  printf("Shutting down the batch server..."); fflush(stdout);
-  kill(batch_pid, SIGTERM);
-  waitpid(batch_pid, &status, 0);
+  printf("Shutting down the name and batch servers..."); fflush(stdout);
+  pthread_kill (name_pid, SIGTERM);
+  pthread_kill (batch_pid, SIGTERM);
+  sched_yield ();
+  pthread_join (name_pid, NULL);
+  pthread_join (batch_pid, NULL);
   printf(" done.\n"); fflush(stdout);
 
   /* clean up */
