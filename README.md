@@ -12,32 +12,32 @@ Directory Structure
     ├── README.md
     ├── SOURCEME.sh
     └── src
-	├── bin
-	│   ├── clients
-	│   │   ├── algorithms
-	│   │   ├── streams
-	│   │   └── tools
-	│   ├── server
-	│   └── standalone
-	│       ├── breadth_first_search
-	│       ├── community_reagglomeration
-	│       ├── connected_components
-	│       ├── insert_remove_benchmark
-	│       ├── protobuf_test
-	│       ├── streaming_clustering_coefficients
-	│       └── streaming_connected_components
-	└── lib
-	    ├── fmemopen
-	    ├── int_hm_seq
-	    ├── int_ht_seq
-	    ├── intvec
-	    ├── kv_store
-	    ├── protobuf
-	    ├── pugixml
-	    ├── stinger_core
-	    ├── stinger_utils
-	    ├── string
-	    └── vtx_set
+    ├── bin
+    │   ├── clients
+    │   │   ├── algorithms
+    │   │   ├── streams
+    │   │   └── tools
+    │   ├── server
+    │   └── standalone
+    │       ├── breadth_first_search
+    │       ├── community_reagglomeration
+    │       ├── connected_components
+    │       ├── insert_remove_benchmark
+    │       ├── protobuf_test
+    │       ├── streaming_clustering_coefficients
+    │       └── streaming_connected_components
+    └── lib
+        ├── fmemopen
+        ├── int_hm_seq
+        ├── int_ht_seq
+        ├── intvec
+        ├── kv_store
+        ├── protobuf
+        ├── pugixml
+        ├── stinger_core
+        ├── stinger_utils
+        ├── string
+        └── vtx_set
 
 Building
 ========
@@ -55,8 +55,8 @@ Change `Release` to `Debug` for a debugging build during development.  Finally, 
 
     make
 
-All binary targets will be built and placed in build/bin.  They are named according to the folder from which they were 
-built (so src/bin/server produces build/bin/server, src/bin/clients/tools/json\_rpc\_server produces 
+All binary targets will be built and placed in build/bin.  They are named according to the folder from which they were
+built (so src/bin/server produces build/bin/server, src/bin/clients/tools/json\_rpc\_server produces
 build/bin/json\_rpc\_server, etc.).  If you ran SOURCEME.sh from the build directory as instructed above, the build/bin
 directory is appended to your path.
 
@@ -67,7 +67,7 @@ is in the include path of all targets.
 Executable Targets
 ==================
 
-As indicated by the directory structure, there are three primary types of targets (client, server, standalone) 
+As indicated by the directory structure, there are three primary types of targets (client, server, standalone)
 and subtypes in the case of clients.
 
 Standalone executables are generally self-contained and use the STINGER
@@ -76,15 +76,15 @@ a single streaming or static algorithm on a synthetic R-MAT graph and edge strea
 
 The STINGER server maintains a STINGER graph in memory and can maintain multiple connections with clients.
 
-Client streams can send edges consisting of source, destination, weight, time, and type where some fields are optional 
+Client streams can send edges consisting of source, destination, weight, time, and type where some fields are optional
 and others can optionally be text strings.
 
-Client algorithms will receive these batches of updates in a somewhat 
+Client algorithms will receive these batches of updates in a somewhat
 synchronous manner as well as shared-memory read only access to the complete graph.  The server provides the capability
-for client algorithms to request a shared memory space to store results and communicate with other algorithms.  
+for client algorithms to request a shared memory space to store results and communicate with other algorithms.
 Client algorithms declare dependencies when they connect and receive the mapped data in the returned structure.
 The server guarantees that all of an algorithm's dependencies will finish processing before that algorithm is executed.
-Clients algorithms are required to provide a description string that indicates what data is stored and the type of the data.  
+Clients algorithms are required to provide a description string that indicates what data is stored and the type of the data.
 
 Client tools are intended to be read-only, but are notified of all running algorithms and shared data.  An example
 of this kind of client is the JSON RPC server (src/bin/clients/tools/json\_rpc\_server).  This server provides access
@@ -105,8 +105,18 @@ To run an example using the server and five terminals:
     term5:build$ ./bin/rmat_edge_generator -n 100000 -x 10000
 
 This will start a stream of R-MAT edges over 100,000 vertices in batches of 10,000 edges.  A connected component labeling
-and PageRank scoring will be maintained.  The JSON RPC server will host interactive web pages at 
+and PageRank scoring will be maintained.  The JSON RPC server will host interactive web pages at
 http://localhost:8088/full.html are powered by the live streaming analysis.  The total memory usage of the dynamic graph is limited to 1 GiB.
+
+To run the above in a single script, you can use the -d option to launch the server in the background.  The server will detach once it is ready for client connections.  Then launch the analysis kernels, possibly gathering the output.  Insert edges, then kill the running server with the -K option when finished.  For example:
+
+    env STINGER_MAX_MEMSIZE=1G ./bin/server -d
+    ./bin/json_rpc_server &
+    ./bin/static_components > static_components.out 2>&1 &
+    ./bin/pagerank > pagerank.out 2>&1 &
+    sleep 2 # Let the above fully launch.
+    ./bin/rmat_edge_generator -n 100000 -x 10000
+    ./bin/server -K
 
 Example: Parsing Twitter
 ------------------------
@@ -115,25 +125,25 @@ Given a stream of Tweets in Twitter's default format (a stream of JSON objects, 
 the user mentions / retweets graph into STINGER using the json\_stream.  The json\_stream is a templated JSON stream parser
 designed to consume one object per line like the Twitter stream and to produce edges from this stream based on a template.
 
-The templates can use the following variables (where one of the two source and one of the two destination variables 
+The templates can use the following variables (where one of the two source and one of the two destination variables
 must be used):
 
     $source_str         - The source vertex name.
-    $source             - The source of the edge as a number (must be able to parse as an integer 
+    $source             - The source of the edge as a number (must be able to parse as an integer
                           less than the maximum vertex ID in the STINGER server).
     $source_type        - A string representing the type of the source vertex.
     $source_weight      - A number to be added to the weight of the source vertex (vertex weights
                           start at zero).
     $destination_str    - The destination vertex name
-    $destination        - The destination of the edge as a number (must be able to parse as an 
+    $destination        - The destination of the edge as a number (must be able to parse as an
                           integer less than the maximum vertex ID in the STINGER server).
     $destination_type   - A string representing the type of the destination vertex
-    $destination_weight - A number to be added to the weight of the destination vertex (vertex 
+    $destination_weight - A number to be added to the weight of the destination vertex (vertex
                           weights start at zero).
     $type_str           - The edge type as a string
     $weight             - The weight of the edge (must be able to parse as an integer).
     $time               - The time of the edge (must be able to parse as an integer).
-    $time_ttr           - Must be a string of either the form "Mon Sep 24 03:35:21 +0000 2012" or 
+    $time_ttr           - Must be a string of either the form "Mon Sep 24 03:35:21 +0000 2012" or
                           "Sun, 28 Oct 2012 17:32:08 +0000".  These will be converted internally
                           into integers of the form YYYYMMDDHHMMSS.  Note that this does not currently support
                           setting a constant value.
@@ -161,12 +171,12 @@ To parse a Twitter stream into STINGER using this template:
     cat twitter_sample.json | ./bin/json_stream template.json
 
 You can replace the 'cat twitter\_sample.json' command with one of the curl commands from the Twitter developer
-API page to directly inject a live Twitter stream (obviously you should go to dev.twitter.com to get your 
+API page to directly inject a live Twitter stream (obviously you should go to dev.twitter.com to get your
 own OAuth data):
 
-    curl --request 'POST' 'https://stream.twitter.com/1.1/statuses/sample.json' --header 
-    'Authorization: OAuth oauth_consumer_key="KEYKEYKEY", oauth_nonce="NONCENONCENONCE", 
-    oauth_signature="SIGSIGSIG", oauth_signature_method="HMAC-SHA1", oauth_timestamp="ts", 
+    curl --request 'POST' 'https://stream.twitter.com/1.1/statuses/sample.json' --header
+    'Authorization: OAuth oauth_consumer_key="KEYKEYKEY", oauth_nonce="NONCENONCENONCE",
+    oauth_signature="SIGSIGSIG", oauth_signature_method="HMAC-SHA1", oauth_timestamp="ts",
     oauth_token="TOKENTOKENTOKEN", oauth_version="1.0"' --verbose | ./bin/json_stream template.json
 
 Example: Parsing CSV Files / Streams
@@ -189,8 +199,8 @@ To create a toy R-MAT graph (256K vertices and 2M undirected edges) and run the 
 
     term1:build$ rmat_graph_generator -s 18 -e 8
     term1:build$ insert_remove_benchmark -n 1 -b 100000 g.18.8.bin a.18.8.100000.bin
-    
-    
+
+
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/a7d82e7aa670122314238336dbbd7c89 "githalytics.com")](http://githalytics.com/robmccoll/stinger)
 
 Handling Common Errors
@@ -232,8 +242,8 @@ Make sure to modify the STINGER\_MAX\_LVERTICES listed under much smaller for qu
 Build Problems
 --------------
 
-First check the STINGER GitHub page to verify that the build is passing (icon immediately under the title).  If it is not passing, the issue resides within the current version itself.  Please checkout a previous revision - the build should be fixed shortly as failing builds sent notifications to the authors.  
+First check the STINGER GitHub page to verify that the build is passing (icon immediately under the title).  If it is not passing, the issue resides within the current version itself.  Please checkout a previous revision - the build should be fixed shortly as failing builds sent notifications to the authors.
 
 Build problems after pulling updates are frequently the result of changes to the Protocol Buffer formats used in STINGER.  These are currently unavoidable as an unfortunate side effect of how we distribute PB and tie it into CMake.  To fix, remove your build directory and build STINGER from scratch.
 
-Additionally, this version of the STINGER tool suite is tested almost exclusively on Linux machines running later version of Ubuntu and Fedora.  While we  would like to have multi-platform compatibility with Mac (via "real" GCC) and Windows (via GCC on cygwin), these are lower priority for our team - unless a project sponsor requires it :-)  
+Additionally, this version of the STINGER tool suite is tested almost exclusively on Linux machines running later version of Debian, Ubuntu, and Fedora.  While we would like to have multi-platform compatibility with Mac (via "real" GCC) and Windows (via GCC on cygwin), these are lower priority for our team - unless a project sponsor requires it.
