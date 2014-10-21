@@ -14,6 +14,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits.h>
+
+/* Not nice, should be a managed link list of all instances, etc... */
+static char stinger_map_file_name[PATH_MAX+1] = { 0 };
 
 void
 sigbus_handler(int sig, siginfo_t *si, void * vuctx)
@@ -22,8 +26,21 @@ sigbus_handler(int sig, siginfo_t *si, void * vuctx)
     "FATAL: stinger_shared.c X: Bus Error - writing to STINGER failed.  It is likely that your STINGER is too large.\n"
     "       Try reducing the number of vertices and/or edges per block in stinger_defs.h.  See the 'Handling Common\n"
     "       Errors' section of the README.md for more information on how to do this.\n";
-  write(STDERR_FILENO, err_string, strlen(err_string));
-  _exit(-1);
+  write (STDERR_FILENO, err_string, strlen(err_string));
+  if (*stinger_map_file_name) shmunlink (stinger_map_file_name);
+  exit (EXIT_FAILURE);
+}
+
+void
+sigsegv_handler(int sig, siginfo_t *si, void * vuctx)
+{
+  char * err_string = 
+    "FATAL: stinger_shared.c X: Segmentation fault - writing to STINGER failed.  It is likely that your STINGER is too large.\n"
+    "       Try reducing the number of vertices and/or edges per block in stinger_defs.h.  See the 'Handling Common\n"
+    "       Errors' section of the README.md for more information on how to do this.\n";
+  write (STDERR_FILENO, err_string, strlen(err_string));
+  if (*stinger_map_file_name) shmunlink (stinger_map_file_name);
+  exit (EXIT_FAILURE);
 }
 
 /** @brief Wrapper function to open and map shared memory.  
@@ -54,14 +71,18 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
     return NULL;
   } 
 
+  strcpy (stinger_map_file_name, name);
+
 #if !defined(__MTA__)
-  /* set up SIGBUS handler */
+  /* set up SIGBUS, SIGSEGV handler */
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
   sa.sa_sigaction = sigbus_handler;
   sa.sa_flags = SA_SIGINFO;
   sigfillset(&sa.sa_mask);
   sigaction(SIGBUS, &sa, NULL);
+  sa.sa_sigaction = sigsegv_handler;
+  sigaction(SIGSEGV, &sa, NULL);
 
 #ifdef __APPLE__
   if(-1 == ftruncate(fd, size)) {

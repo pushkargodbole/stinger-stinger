@@ -177,6 +177,17 @@ int main(int argc, char *argv[])
   struct stinger * S = stinger_shared_new(&graph_name);
   size_t graph_sz = S->length + sizeof(struct stinger);
 
+  {
+    struct sigaction sa;
+    sa.sa_flags = 0;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_handler = sigterm_cleanup;
+    /* Ignore the old handlers, including the SIGBUS one. */
+    sigaction (SIGINT, &sa, NULL);
+    sigaction (SIGTERM, &sa, NULL);
+    sigaction (SIGHUP, &sa, NULL);
+  }
+
   /* load edges from disk (if applicable) */
   if (input_file[0] != '\0')
   {
@@ -267,17 +278,6 @@ int main(int argc, char *argv[])
     pthread_mutex_unlock (&batch_thread_ready);
     pthread_mutex_destroy (&gname_thread_ready);
     pthread_mutex_destroy (&batch_thread_ready);
-  }
-
-  {
-    struct sigaction sa;
-    sa.sa_flags = 0;
-    sigemptyset (&sa.sa_mask);
-    sa.sa_handler = sigterm_cleanup;
-    /* Ignore the old handlers. */
-    sigaction (SIGINT, &sa, NULL);
-    sigaction (SIGTERM, &sa, NULL);
-    sigaction (SIGHUP, &sa, NULL);
   }
 
   if(unleash_daemon) {
