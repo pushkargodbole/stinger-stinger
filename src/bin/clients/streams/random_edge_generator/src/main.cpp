@@ -8,6 +8,13 @@
 #include <time.h>
 #include <netdb.h>
 
+#ifdef __cplusplus
+#if !defined(INT64_MAX)
+# include <limits>
+# define INT64_MAX std::numeric_limits<int64_t>::max()
+#endif // INT64_MAX
+#endif // __cplusplus
+
 extern "C" {
 #include "stinger_core/stinger.h"
 #include "stinger_core/xmalloc.h"
