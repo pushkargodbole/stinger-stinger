@@ -111,8 +111,8 @@ http://localhost:8088/full.html are powered by the live streaming analysis.  The
 To run the above in a single script, you can use the -d option to launch the server in the background.  The server will detach once it is ready for client connections.  Then launch the analysis kernels, possibly gathering the output.  Insert edges, then kill the running server with the -K option when finished.  For example, to insert ten batches of 10000 R-MAT edges:
 
     env STINGER_MAX_MEMSIZE=1G ./bin/server -d
-    ./bin/static_components > static_components.out 2>&1 &
-    ./bin/pagerank > pagerank.out 2>&1 &
+    ./bin/simple_communities > simple_communities.out 2>&1 &
+    ./bin/pagerank_updating > pagerank_updating.out 2>&1 &
     sleep 2 # Let the above fully launch.
     ./bin/rmat_edge_generator -n 100000 -x 10000 -y 10
     ./bin/server -K
