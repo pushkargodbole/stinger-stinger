@@ -475,14 +475,14 @@ map_names (stinger_registered_alg * alg)
       // }
       if (alg->insertions[i].source_str) {
         int64_t t;
-        stinger_mapping_create (S, alg->insertions[i].source_str,
-                                strlen (alg->insertions[i].source_str), &t);
+        t = stinger_mapping_lookup (S, alg->insertions[i].source_str,
+                                    strlen (alg->insertions[i].source_str));
         alg->insertions[i].source = t;
       }
       if (alg->insertions[i].destination_str) {
         int64_t t;
-        stinger_mapping_create (S, alg->insertions[i].destination_str,
-                                strlen (alg->insertions[i].destination_str), &t);
+        t = stinger_mapping_lookup (S, alg->insertions[i].destination_str,
+                                    strlen (alg->insertions[i].destination_str));
         alg->insertions[i].destination = t;
       }
     }
@@ -496,14 +496,14 @@ map_names (stinger_registered_alg * alg)
       // }
       if (alg->deletions[d].source_str) {
         int64_t t;
-        stinger_mapping_create (S, alg->deletions[d].source_str,
-                                strlen (alg->deletions[d].source_str), &t);
+        t = stinger_mapping_lookup (S, alg->deletions[d].source_str,
+                                    strlen (alg->deletions[d].source_str));
         alg->deletions[d].source = t;
       }
       if (alg->deletions[d].destination_str) {
         int64_t t;
-        stinger_mapping_create (S, alg->deletions[d].destination_str,
-                                strlen (alg->deletions[d].destination_str), &t);
+        t = stinger_mapping_lookup (S, alg->deletions[d].destination_str,
+                                    strlen (alg->deletions[d].destination_str));
         alg->deletions[d].destination = t;
       }
     }
