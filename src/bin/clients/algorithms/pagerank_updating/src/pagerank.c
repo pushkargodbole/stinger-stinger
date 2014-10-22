@@ -20,14 +20,14 @@
 static inline double
 termthresh_pr (const int64_t nv, struct stinger *S)
 {
-  const double x = sqrt(DBL_EPSILON) / 8.0;
+  const double x = FLT_EPSILON / 2.0;
   return nv * x;
 }
 
 static inline double
 termthresh_dpr (const int64_t nv, struct stinger *S)
 {
-  const double x = sqrt(DBL_EPSILON) / 8.0;
+  const double x = FLT_EPSILON / 2.0;
   return nv * x;
 }
 
@@ -326,7 +326,8 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
     for (niter = 0; niter < maxiter && rho >= termthresh; ++niter) {
 
       OMP("omp master") new_rho = 0.0; /* uses barriers in spmspv */
-      const double holdthresh = holdthreshmult * dpr_deg * DBL_EPSILON / ndpr;
+      /* const double holdthresh = holdthreshmult * dpr_deg * DBL_EPSILON / ndpr; */
+      const double holdthresh = (1.0-alpha)/(1.0+alpha) * termthresh / ndpr;
 
       stinger_unit_dspmTspv_degscaled_held_ompcas_batch (holdthresh,
                                                          nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
