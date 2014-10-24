@@ -20,14 +20,14 @@
 static inline double
 termthresh_pr (const int64_t nv, struct stinger *S)
 {
-  const double x = FLT_EPSILON / 2.0;
+  const double x = FLT_EPSILON / 64.0;
   return nv * x;
 }
 
 static inline double
 termthresh_dpr (const int64_t nv, struct stinger *S)
 {
-  const double x = FLT_EPSILON / 2.0;
+  const double x = FLT_EPSILON / 64.0;
   return nv * x;
 }
 
