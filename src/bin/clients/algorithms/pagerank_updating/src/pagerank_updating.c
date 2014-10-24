@@ -134,9 +134,9 @@ main(int argc, char *argv[])
         off += strlen (desc_alg[k]);
       }
   }
-  fprintf (stderr, "n_alg_run = %d\n", n_alg_run);
-  fprintf (stderr, "data_desc = \"%s\"\n", data_desc);
-  fprintf (stderr, "initial into %d \"%s\"\n", pr_val_init, desc_alg[pr_val_init]);
+  /* fprintf (stderr, "n_alg_run = %d\n", n_alg_run); */
+  /* fprintf (stderr, "data_desc = \"%s\"\n", data_desc); */
+  /* fprintf (stderr, "initial into %d \"%s\"\n", pr_val_init, desc_alg[pr_val_init]); */
 
   /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ *
    * Setup and register algorithm with the server
@@ -173,7 +173,6 @@ main(int argc, char *argv[])
         pr_val[k] = &alg_data[2 * off * max_nv];
         pr_val_delta[k] = &alg_data[(1 + 2 * off) * max_nv];
         if (k <= RESTART) old_pr_val[k] = calloc (nv, sizeof (*old_pr_val[k]));
-        fprintf (stderr, "assigning for alg \"%s\" %p from %p\n", desc_alg[k], pr_val[k], alg_data);
         ++off;
       }
   }
@@ -193,7 +192,6 @@ main(int argc, char *argv[])
   OMP("omp parallel") {
     for (int k = 0; k < NPR_ALG; ++k)
       if (run_alg[k]) {
-        fprintf (stderr, "clearing for alg \"%s\"\n", desc_alg[k]);
         OMP("omp for nowait" OMP_SIMD)
           for (int64_t i = 0; i < nv; ++i) {
             pr_val[k][i] = 0.0;
