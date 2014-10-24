@@ -180,7 +180,6 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
               int64_t * x_deg, int64_t * x_idx, double * x_val,
               const double alpha, const int maxiter,
               int64_t * b_deg, int64_t * b_idx, double * b_val,
-              const double norm1_pr,
               int64_t * dpr_deg_in, int64_t * dpr_idx, double * dpr_val,
               int64_t * mark,
               int64_t * iworkspace,
@@ -224,7 +223,7 @@ pagerank_dpr (const int64_t nv, struct stinger * S,
         new_dpr_val[k] = dpr_val[k] = b_val[k];
       }
 
-    const double termthresh = termthresh_dpr (nv, S) * norm1_pr / cb;
+    const double termthresh = termthresh_dpr (nv, S) / cb;
     int niter;
 
     /* On each iteration, new_dpr_deg enters with dpr_deg's pattern and b's values. */
@@ -271,7 +270,6 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
                    int64_t * x_deg, int64_t * x_idx, double * x_val,
                    const double alpha, const int maxiter,
                    int64_t * b_deg, int64_t * b_idx, double * b_val,
-                   const double norm1_pr,
                    int64_t * dpr_deg_in, int64_t * dpr_idx, double * dpr_val,
                    int64_t * mark,
                    int64_t * iworkspace,
@@ -296,8 +294,6 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
   new_dpr_idx = iworkspace;
   new_dpr_val = dworkspace;
 
-  double ndpr = 0.0;
-
   OMP("omp parallel") {
     /* Update b = b1 - b0 */
     stinger_unit_dspmTspv_degscaled_ompcas_batch (nv, alpha, S, *x_deg, x_idx, x_val,
@@ -310,16 +306,15 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
     OMP("omp for reduction(+:cb)" OMP_SIMD)
       for (int64_t k = 0; k < bdeg; ++k)
         cb += fabs (b_val[k]);
-    OMP("omp for reduction(+:ndpr)" OMP_SIMD)
+    OMP("omp for" OMP_SIMD)
       for (int64_t k = 0; k < bdeg; ++k) {
         b_val[k] /= cb;
         new_dpr_idx[k] = dpr_idx[k] = b_idx[k];
         new_dpr_val[k] = dpr_val[k] = b_val[k];
-        ndpr += b_val[k];
       }
 
-    const double termthresh = termthresh_dpr (nv, S) * norm1_pr / cb;
-    const double holdthreshmult = 8.0;
+    const double termthresh = termthresh_dpr (nv, S) / cb;
+    /* const double holdthreshmult = 8.0; */
     int niter;
 
     /* On each iteration, new_dpr_deg enters with dpr_deg's pattern and b's values. */
@@ -327,15 +322,14 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
 
       OMP("omp master") new_rho = 0.0; /* uses barriers in spmspv */
       /* const double holdthresh = holdthreshmult * dpr_deg * DBL_EPSILON / ndpr; */
-      const double holdthresh = (1.0-alpha)/(1.0+alpha) * termthresh / ndpr;
+      const double holdthresh = (1.0-alpha)/(1.0+alpha) * termthresh / dpr_deg;
 
       stinger_unit_dspmTspv_degscaled_held_ompcas_batch (holdthresh,
                                                          nv, alpha, S, dpr_deg, dpr_idx, dpr_val,
                                                          1.0,
                                                          &new_dpr_deg, new_dpr_idx, new_dpr_val,
                                                          mark, dzero_workspace, &total_vol);
-      OMP("omp single") ndpr = 0.0;
-      OMP("omp for reduction(+: new_rho, ndpr)" OMP_SIMD)
+      OMP("omp for reduction(+: new_rho)" OMP_SIMD)
         for (int64_t k = 0; k < new_dpr_deg; ++k) {
           /* XXX: Again, assuming pattern is being super-setted and kept in order. */
           assert(k >= dpr_deg || new_dpr_idx[k] == dpr_idx[k]);
@@ -345,7 +339,6 @@ pagerank_dpr_held (const int64_t nv, struct stinger * S,
           if (k >= dpr_deg) dpr_idx[k] = new_dpr_idx[k];
           dpr_val[k] = new_dpr_val[k];
           new_dpr_val[k] = (k < bdeg? b_val[k] : 0.0);
-          ndpr += dpr_val[k];
         }
 
       OMP("omp single") {
