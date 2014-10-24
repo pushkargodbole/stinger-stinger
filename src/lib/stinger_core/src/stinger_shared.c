@@ -81,8 +81,11 @@ shmmap (const char * name, int oflags, mode_t mode, int prot, size_t size, int m
   sa.sa_flags = SA_SIGINFO;
   sigfillset(&sa.sa_mask);
   sigaction(SIGBUS, &sa, NULL);
-  sa.sa_sigaction = sigsegv_handler;
-  sigaction(SIGSEGV, &sa, NULL);
+  /* Only use this in the server */
+  if ((mode & O_RDWR) | (mode & O_WRONLY)) {
+    sa.sa_sigaction = sigsegv_handler;
+    sigaction(SIGSEGV, &sa, NULL);
+  }
 
 #ifdef __APPLE__
   if(-1 == ftruncate(fd, size)) {
