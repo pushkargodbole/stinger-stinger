@@ -35,6 +35,29 @@ struct spvect {
 };
 static inline struct spvect alloc_spvect (int64_t nvmax);
 
+static void gather_pre (const stinger_registered_alg * alg, struct spvect * x,
+                        int64_t * restrict mark);
+static void dpr_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b,
+                     struct spvect x, const double * restrict pr_val,
+                     int64_t * restrict mark, double * restrict dzero_workspace,
+                     int64_t * restrict pr_vol);
+static void dpr_held_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b,
+                          struct spvect * restrict x_held,
+                          struct spvect x, const double * restrict pr_val,
+                          int64_t * restrict mark, double * restrict dzero_workspace,
+                          int64_t * restrict pr_vol);
+static void dpr_update (const int64_t nv, struct stinger * S, struct spvect * x, struct spvect * b,
+                        struct spvect * dpr, double * restrict pr_val, const double alpha,
+                        const int maxiter, int64_t * restrict mark, int64_t * restrict iworkspace,
+                        double * workspace, double * dzero_workspace, int * niter, int64_t * pr_vol);
+static void dpr_held_update (const int64_t nv, struct stinger * S, struct spvect * x, struct spvect * b,
+                             struct spvect * dpr, double * restrict pr_val, const double alpha,
+                             const int maxiter, int64_t * restrict mark, int64_t * restrict iworkspace,
+                             double * workspace, double * dzero_workspace, int * niter, int64_t * pr_vol);
+static void pr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol);
+static void rpr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol);
+
+
 #define BASELINE 0
 #define RESTART 1
 #define DPR 2
@@ -253,76 +276,20 @@ main(int argc, char *argv[])
       }
 
       tic ();
-      {
-        const int64_t nins = alg->num_insertions;
-        const int64_t nrem = alg->num_deletions;
-        const stinger_edge_update * restrict ins = alg->insertions;
-        const stinger_edge_update * restrict rem = alg->deletions;
-
-        OMP(omp parallel) {
-          OMP(omp for nowait)
-            for (int64_t k = 0; k < nins; ++k) {
-              append_to_vlist (&x.nv, x.idx, mark, ins[k].source);
-              append_to_vlist (&x.nv, x.idx, mark, ins[k].destination);
-            }
-          OMP(omp for)
-            for (int64_t k = 0; k < nrem; ++k) {
-              append_to_vlist (&x.nv, x.idx, mark, rem[k].source);
-              append_to_vlist (&x.nv, x.idx, mark, rem[k].destination);
-            }
-          OMP(omp for OMP_SIMD)
-            for (int64_t k = 0; k < x.nv; ++k)
-              mark[x.idx[k]] = -1;
-        }
-      }
+      gather_pre (alg, &x, mark);
       gather_time = toc ();
 
       if (run_alg[DPR]) {
         tic ();
-        b.nv = 0;
-        /* Compute b0 in b */
-        OMP(omp parallel) {
-          OMP(omp for OMP_SIMD)
-            for (int64_t k = 0; k < x.nv; ++k) {
-              assert(!isnan(pr_val[DPR][x.idx[k]]));
-              x.val[k] = pr_val[DPR][x.idx[k]];
-            }
-          stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
-                                                        1.0, alg->stinger,
-                                                        x.nv, x.idx, x.val,
-                                                        0.0,
-                                                        &b.nv, b.idx, b.val,
-                                                        mark, dzero_workspace,
-                                                        &pr_vol[DPR]);
-          OMP(omp for OMP_SIMD)
-            for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
-        }
+        dpr_pre (nv, alg->stinger, &b, x, pr_val[DPR], mark, dzero_workspace, &pr_vol[DPR]);
         pr_pre_time[DPR] = toc ();
       }
 
       /* Compute x, b0 for dpr_held */
       if (run_alg[DPR_HELD]) {
         tic ();
-        b_held.nv = 0;
-        x_held.nv = x.nv;
-        OMP(omp parallel) {
-          OMP(omp for OMP_SIMD)
-            for (int64_t k = 0; k < x.nv; ++k) {
-              assert(!isnan(pr_val[DPR_HELD][x.idx[k]]));
-              x_held.idx[k] = x.idx[k];
-              x_held.val[k] = pr_val[DPR_HELD][x.idx[k]];
-            }
-          stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
-                                                        1.0, alg->stinger,
-                                                        x_held.nv, x_held.idx, x_held.val,
-                                                        0.0,
-                                                        &b_held.nv, b_held.idx, b_held.val,
-                                                        mark, dzero_workspace,
-                                                        &pr_vol[DPR_HELD]);
-          OMP(omp for OMP_SIMD)
-            for (int64_t k = 0; k < b_held.nv; ++k) mark[b_held.idx[k]] = -1;
-          pr_pre_time[DPR_HELD] = toc ();
-        }
+        dpr_held_pre (nv, alg->stinger, &b_held, &x_held, x, pr_val[DPR_HELD], mark, dzero_workspace, &pr_vol[DPR_HELD]);
+        pr_pre_time[DPR_HELD] = toc ();
       }
 
       stinger_alg_end_pre(alg);
@@ -339,17 +306,7 @@ main(int argc, char *argv[])
       /* Compute the change in PageRank */
       if (run_alg[DPR]) {
         tic ();
-        niter[DPR] = pagerank_dpr (nv, S,
-                                   &x.nv, x.idx, x.val,
-                                   alpha, maxiter,
-                                   &b.nv, b.idx, b.val,
-                                   &dpr.nv, dpr.idx, dpr.val,
-                                   mark, iworkspace, workspace, dzero_workspace,
-                                   &pr_vol[DPR]);
-        OMP(omp parallel for OMP_SIMD)
-          for (int64_t k = 0; k < dpr.nv; ++k)
-            pr_val[DPR][dpr.idx[k]] += dpr.val[k];
-        normalize_pr (nv, pr_val[DPR]);
+        dpr_update (nv, S, &x, &b, &dpr, pr_val[DPR], alpha, maxiter, mark, iworkspace, workspace, dzero_workspace, &niter[DPR], &pr_vol[DPR]);
         pr_time[DPR] = toc () + pr_pre_time[DPR];
         pr_nupd[DPR] = dpr.nv;
 
@@ -360,36 +317,10 @@ main(int argc, char *argv[])
           }
       }
 
-#if 0
-      /* Reset for dpr_held */
-      b.nv = 0;
-      OMP(omp parallel) {
-        /* Compute b0 in b */
-        stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
-                                                      1.0, alg->stinger,
-                                                      x.nv, x.idx, x.val,
-                                                      0.0,
-                                                      &b.nv, b.idx, b.val,
-                                                      mark, dzero_workspace,
-                                                      &pr_vol[DPR_HELD]);
-        OMP(omp for OMP_SIMD)
-          for (int64_t k = 0; k < b.nv; ++k) mark[b.idx[k]] = -1;
-      }
-#endif
       if (run_alg[DPR_HELD]) {
         /* Compute the change in PageRank, holding back small changes */
         tic ();
-        niter[DPR_HELD] = pagerank_dpr_held (nv, S, /* XXX */
-                                             &x_held.nv, x_held.idx, x_held.val,
-                                             alpha, maxiter,
-                                             &b_held.nv, b_held.idx, b_held.val,
-                                             &dpr_held.nv, dpr_held.idx, dpr_held.val,
-                                             mark, iworkspace, workspace, dzero_workspace,
-                                             &pr_vol[DPR_HELD]);
-        OMP(omp parallel for OMP_SIMD)
-          for (int64_t k = 0; k < dpr_held.nv; ++k)
-            pr_val[DPR_HELD][dpr_held.idx[k]] += dpr_held.val[k];
-        normalize_pr (nv, pr_val[DPR_HELD]);
+        dpr_update (nv, S, &x_held, &b_held, &dpr_held, pr_val[DPR_HELD], alpha, maxiter, mark, iworkspace, workspace, dzero_workspace, &niter[DPR_HELD], &pr_vol[DPR_HELD]);
         pr_time[DPR_HELD] = toc () + pr_pre_time[DPR_HELD];
         pr_nupd[DPR_HELD] = dpr_held.nv;
       }
@@ -397,20 +328,16 @@ main(int argc, char *argv[])
       if (run_alg[BASELINE]) {
         /* Compute PageRank from scratch */
         tic ();
-        niter[BASELINE] = pagerank (nv, S, pr_val[BASELINE], v, alpha, maxiter, workspace);
-        normalize_pr (nv, pr_val[BASELINE]);
+        pr_update (nv, NE, S, pr_val[BASELINE], v, alpha, maxiter, workspace, &niter[BASELINE], &pr_vol[BASELINE]);
         pr_time[BASELINE] = toc ();
-        pr_vol[BASELINE] = niter[BASELINE] * NE;
         pr_nupd[BASELINE] = nv;
       }
 
       if (run_alg[RESTART]) {
         /* Restart using the previous vector, cumulative... */
         tic ();
-        niter[RESTART] = pagerank_restart (nv, S, pr_val[RESTART], v, alpha, maxiter, workspace);
-        normalize_pr (nv, pr_val[RESTART]);
+        rpr_update (nv, NE, S, pr_val[RESTART], v, alpha, maxiter, workspace, &niter[RESTART], &pr_vol[RESTART]);
         pr_time[RESTART] = toc ();
-        pr_vol[RESTART] = niter[RESTART] * NE;
         pr_nupd[RESTART] = nv;
       }
 
@@ -537,4 +464,131 @@ find_max_pr (const int64_t nv, const double * restrict pr_val)
     }
   }
   return loc;
+}
+
+void
+gather_pre (const stinger_registered_alg * alg, struct spvect * x, int64_t * restrict mark)
+{
+  const int64_t nins = alg->num_insertions;
+  const int64_t nrem = alg->num_deletions;
+  const stinger_edge_update * restrict ins = alg->insertions;
+  const stinger_edge_update * restrict rem = alg->deletions;
+
+  OMP(omp parallel) {
+    OMP(omp for nowait)
+      for (int64_t k = 0; k < nins; ++k) {
+        append_to_vlist (&x->nv, x->idx, mark, ins[k].source);
+        append_to_vlist (&x->nv, x->idx, mark, ins[k].destination);
+      }
+    OMP(omp for)
+      for (int64_t k = 0; k < nrem; ++k) {
+        append_to_vlist (&x->nv, x->idx, mark, rem[k].source);
+        append_to_vlist (&x->nv, x->idx, mark, rem[k].destination);
+      }
+    OMP(omp for OMP_SIMD)
+      for (int64_t k = 0; k < x->nv; ++k)
+        mark[x->idx[k]] = -1;
+  }
+}
+
+void
+dpr_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, struct spvect x, const double * restrict pr_val, int64_t * restrict mark, double * restrict dzero_workspace, int64_t * restrict pr_vol)
+{
+  int64_t b_nv = 0;
+  /* Compute b0 in b */
+  OMP(omp parallel) {
+    OMP(omp for OMP_SIMD)
+      for (int64_t k = 0; k < x.nv; ++k) {
+        assert(!isnan(pr_val[x.idx[k]]));
+        x.val[k] = pr_val[x.idx[k]];
+      }
+    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
+                                                  1.0, S,
+                                                  x.nv, x.idx, x.val,
+                                                  0.0,
+                                                  &b_nv, b->idx, b->val,
+                                                  mark, dzero_workspace,
+                                                  pr_vol);
+    OMP(omp for OMP_SIMD)
+      for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
+  }
+  b->nv = b_nv;
+}
+
+void
+dpr_held_pre (const int64_t nv, struct stinger * S, struct spvect * restrict b, struct spvect * restrict x_held, const struct spvect x, const double * restrict pr_val, int64_t * restrict mark, double * restrict dzero_workspace, int64_t * restrict pr_vol)
+{
+  int64_t b_nv = 0;
+  int64_t x_held_nv = x.nv;
+  /* Compute b0 in b */
+  OMP(omp parallel) {
+    OMP(omp for OMP_SIMD)
+      for (int64_t k = 0; k < x.nv; ++k) {
+        assert(!isnan(pr_val[x.idx[k]]));
+        x_held->idx[k] = x.idx[k];
+        x_held->val[k] = pr_val[x.idx[k]];
+      }
+    stinger_unit_dspmTspv_degscaled_ompcas_batch (nv,
+                                                  1.0, S,
+                                                  x_held_nv, x_held->idx, x_held->val,
+                                                  0.0,
+                                                  &b_nv, b->idx, b->val,
+                                                  mark, dzero_workspace,
+                                                  pr_vol);
+    OMP(omp for OMP_SIMD)
+      for (int64_t k = 0; k < b_nv; ++k) mark[b->idx[k]] = -1;
+  }
+  b->nv = b_nv;
+  x_held->nv = x_held_nv;
+}
+
+void
+dpr_update (const int64_t nv, struct stinger * S, struct spvect * x, struct spvect * b, struct spvect * dpr, double * restrict pr_val, const double alpha, const int maxiter, int64_t * restrict mark, int64_t * restrict iworkspace, double * workspace, double * dzero_workspace, int * niter, int64_t * pr_vol)
+{
+  *niter = pagerank_dpr (nv, S,
+                         &x->nv, x->idx, x->val,
+                         alpha, maxiter,
+                         &b->nv, b->idx, b->val,
+                         &dpr->nv, dpr->idx, dpr->val,
+                         mark, iworkspace, workspace, dzero_workspace,
+                         pr_vol);
+  const int64_t dpr_nv = dpr->nv;
+  OMP(omp parallel for OMP_SIMD)
+    for (int64_t k = 0; k < dpr_nv; ++k)
+      pr_val[dpr->idx[k]] += dpr->val[k];
+  normalize_pr (nv, pr_val);
+}
+
+/* Nearly identical, but useful for profiling. */
+void
+dpr_held_update (const int64_t nv, struct stinger * S, struct spvect * x, struct spvect * b, struct spvect * dpr, double * restrict pr_val, const double alpha, const int maxiter, int64_t * restrict mark, int64_t * restrict iworkspace, double * workspace, double * dzero_workspace, int * niter, int64_t * pr_vol)
+{
+  *niter = pagerank_dpr_held (nv, S,
+                              &x->nv, x->idx, x->val,
+                              alpha, maxiter,
+                              &b->nv, b->idx, b->val,
+                              &dpr->nv, dpr->idx, dpr->val,
+                              mark, iworkspace, workspace, dzero_workspace,
+                              pr_vol);
+  const int64_t dpr_nv = dpr->nv;
+  OMP(omp parallel for OMP_SIMD)
+    for (int64_t k = 0; k < dpr_nv; ++k)
+      pr_val[dpr->idx[k]] += dpr->val[k];
+  normalize_pr (nv, pr_val);
+}
+
+void
+pr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol)
+{
+  *niter = pagerank (nv, S, pr_val, v, alpha, maxiter, workspace);
+  normalize_pr (nv, pr_val);
+  *pr_vol = *niter * NE;
+}
+
+void
+rpr_update (const int64_t nv, const int64_t NE, struct stinger * S, double * restrict pr_val, double * restrict v, const double alpha, const int maxiter, double * workspace, int * niter, int64_t * pr_vol)
+{
+  *niter = pagerank_restart (nv, S, pr_val, v, alpha, maxiter, workspace);
+  normalize_pr (nv, pr_val);
+  *pr_vol = *niter * NE;
 }
