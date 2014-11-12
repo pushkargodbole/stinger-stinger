@@ -192,15 +192,15 @@ connected_components_stinger_edge_parallel_and_tree(
     freeT = 1;
   }
 
-  OMP("omp parallel") {
-    OMP("omp for")
+  OMP(omp parallel) {
+    OMP(omp for)
       for(uint64_t k = 0; k < nv; ++k) {
 	d[k] = k;
 	tree[k] = k;
       }
 
     while(1) {
-      OMP("omp single")
+      OMP(omp single)
 	change = 0;
       for(int64_t t = 0; t < S->max_netypes; t++) {
 	STINGER_FORALL_EDGES_BEGIN(S, t) {
@@ -220,12 +220,12 @@ connected_components_stinger_edge_parallel_and_tree(
 
     }
 
-    OMP("omp for")
+    OMP(omp for)
       for (i = 0; i < nv; i++) {
 	T[i] = 0;
       }
 
-    OMP("omp for reduction(+:count)")
+    OMP(omp for reduction(+:count))
       MTA("mta assert nodep")
       for (i = 0; i < nv; i++) {
 	int64_t temp = 0;
@@ -256,14 +256,14 @@ connected_components_stinger_edge (const size_t nv,
     freeT = 1;
   }
 
-  OMP("omp parallel") {
-    OMP("omp for")
+  OMP(omp parallel) {
+    OMP(omp for)
       for(uint64_t k = 0; k < nv; ++k) {
 	d[k] = k;
       }
 
     while(1) {
-      OMP("omp single")
+      OMP(omp single)
 	change = 0;
       for(int64_t t = 0; t < S->max_netypes; t++) {
 	STINGER_PARALLEL_FORALL_EDGES_BEGIN(S, t) {
@@ -280,18 +280,18 @@ connected_components_stinger_edge (const size_t nv,
 
       if(!change) break;
 
-      OMP("omp for")
+      OMP(omp for)
 	for(uint64_t l = 0; l < nv; ++l)
 	  while(d[l] != d[d[l]])
 	    d[l] = d[d[l]];
     }
 
-    OMP("omp for")
+    OMP(omp for)
       for (i = 0; i < nv; i++) {
 	T[i] = 0;
       }
 
-    OMP("omp for")
+    OMP(omp for)
       for (i = 0; i < nv; i++) {
 	int64_t temp = 0;
 	if (stinger_int64_fetch_add(T+d[i], 1) == 0) {
@@ -313,7 +313,7 @@ spanning_tree_is_good (int64_t * restrict d,
 {
   int rtn = 0;
 
-  OMP("omp parallel for reduction(+:rtn)")
+  OMP(omp parallel for reduction(+:rtn))
     for(uint64_t i = 0; i < nv; i++) {
       uint64_t j = i;
       while(j != tree[j])
@@ -340,10 +340,10 @@ connected_components_edge (const size_t nv,
     freemarks = 1;
   }
 
-  OMP("omp parallel") {
+  OMP(omp parallel) {
     while (1) {
-      OMP("omp single") nchanged = 0;
-      MTA("mta assert nodep") OMP("omp for reduction(+:nchanged)")
+      OMP(omp single) nchanged = 0;
+      MTA("mta assert nodep") OMP(omp for reduction(+:nchanged))
 	for (int64_t k = 0; k < ne; ++k) {
 	  const int64_t i = sV[k];
 	  const int64_t j = eV[k];
@@ -353,13 +353,13 @@ connected_components_edge (const size_t nv,
 	  }
 	}
       if (!nchanged) break;
-      MTA("mta assert nodep") OMP("omp for")
+      MTA("mta assert nodep") OMP(omp for)
 	for (int64_t i = 0; i < nv; ++i)
 	  while (D[i] != D[D[i]])
 	    D[i] = D[D[i]];
     }
 
-    MTA("mta assert nodep") OMP("omp for reduction(+:count)")
+    MTA("mta assert nodep") OMP(omp for reduction(+:count))
       for (int64_t i = 0; i < nv; ++i) {
 	while (D[i] != D[D[i]])
 	  D[i] = D[D[i]];
@@ -385,7 +385,7 @@ component_dist (const size_t nv,
 
   uint64_t max = 0, maxV = 0;
 
-  OMP("parallel for")
+  OMP(parallel for)
     MTA("mta assert nodep")
     for (i = 0; i < nv; i++) {
       cardinality[i] = 0;

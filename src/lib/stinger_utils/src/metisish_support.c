@@ -43,21 +43,13 @@ static int64_t ebuf_i[EBUFSZ];
 static int64_t ebuf_j[EBUFSZ];
 static int64_t ebuf_w[EBUFSZ];
 
-#if !defined(OMP)
-#if defined(_OPENMP)
-#define OMP(x_) _Pragma(x_)
-#else
-#define OMP(x_)
-#endif
-#endif
-
 static void
 flush_ebuf (struct stinger * S)
 {
   if (n_ebuf > 0) {
-    OMP("omp parallel") {
+    OMP(omp parallel) {
       char buf[65];
-      OMP("omp for")
+      OMP(omp for)
       for (int64_t k = 0; k < n_ebuf; ++k) {
         int64_t id_i, id_j;
         sprintf (buf, "%ld", (long)ebuf_i[k]);

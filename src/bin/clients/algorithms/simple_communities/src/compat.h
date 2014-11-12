@@ -208,13 +208,13 @@ take_i64_pair (int64_t *p1, int64_t *v1, int64_t *p2, int64_t *v2)
   int took = 0;
   int64_t out1, out2;
   do {
-    OMP("omp critical (TAKE)") {
+    OMP(omp critical (TAKE)) {
       out1 = *p1;
       out2 = *p2;
       if (out1 != -1 && out2 != -1) {
        *p1 = -1;
        *p2 = -1;
-       OMP("omp flush (p1, p2)");
+       OMP(omp flush (p1, p2));
        took = 1;
       }
     }
@@ -227,10 +227,10 @@ release_i64_pair (int64_t *p1, int64_t v1, int64_t *p2, int64_t v2)
 {
   assert (*p1 == -1);
   assert (*p2 == -1);
-  OMP("omp critical (TAKE)") {
+  OMP(omp critical (TAKE)) {
     *p1 = v1;
     *p2 = v2;
-    OMP("omp flush (p1, p2)");
+    OMP(omp flush (p1, p2));
   }
   return;
 }
@@ -258,22 +258,22 @@ take_i64 (int64_t *p)
 {
   int64_t out;
   do {
-    OMP("omp critical (TAKE)") {
+    OMP(omp critical (TAKE)) {
       out = *p;
       if (out != -1)
        *p = -1;
     }
   } while (out < 0);
-  OMP("omp flush (p)");
+  OMP(omp flush (p));
   return out;
 }
 void
 release_i64 (int64_t *p, int64_t val)
 {
   assert (*p == -1);
-  OMP("omp critical (TAKE)") {
+  OMP(omp critical (TAKE)) {
     *p = val;
-    OMP("omp flush (p)");
+    OMP(omp flush (p));
   }
   return;
 }

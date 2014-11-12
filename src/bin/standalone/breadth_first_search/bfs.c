@@ -156,7 +156,7 @@ st_conn_stinger (const struct stinger *G, const int64_t nv, const int64_t ne,
   k = 0;
   x = 0;
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     MTA ("mta assert parallel")
     MTA ("mta loop future")
     MTA ("mta assert nodep")

@@ -84,7 +84,7 @@ count_triangles (stinger_t * S, uint64_t v)
 void
 count_all_triangles (stinger_t * S, int64_t * ntri)
 {
-  OMP ("omp for schedule(dynamic,128)")
+  OMP(omp for schedule(dynamic,128))
   for (size_t i = 0; i < S->max_nv; ++i)
     ntri[i] = count_triangles (S, i);
 }
@@ -132,7 +132,7 @@ main(int argc, char *argv[])
     tic();
     count_all_triangles (alg->stinger, ntri);
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < alg->stinger->max_nv; v++) {
       int64_t deg = stinger_outdegree_get(alg->stinger, v);
       int64_t d = deg * (deg-1);
@@ -152,13 +152,13 @@ main(int argc, char *argv[])
 
       tic();
 
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (uint64_t v = 0; v < alg->stinger->max_nv; v++) {
 	affected[v] = 0;
       }
 
       /* each vertex incident on an insertion is affected */
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (uint64_t i = 0; i < alg->num_insertions; i++) {
 	int64_t src = alg->insertions[i].source;
 	int64_t dst = alg->insertions[i].destination;
@@ -176,7 +176,7 @@ main(int argc, char *argv[])
       }
      
       /* each vertex incident on a deletion is affected */
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (uint64_t i = 0; i < alg->num_deletions; i++) {
 	int64_t src = alg->deletions[i].source;
 	int64_t dst = alg->deletions[i].destination;
@@ -205,7 +205,7 @@ main(int argc, char *argv[])
 
       tic();
 
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (uint64_t v = 0; v < alg->stinger->max_nv; v++) {
 	if (affected[v]) {
 	  ntri[v] = count_triangles (alg->stinger, v);

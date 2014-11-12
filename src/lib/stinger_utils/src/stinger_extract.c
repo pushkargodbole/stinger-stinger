@@ -8,13 +8,6 @@
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 
-#if defined(_OPENMP)
-#include <omp.h>
-#define OMP(x) _Pragma(x)
-#else
-#define OMP(x)
-#endif
-
 void
 stinger_extract_bfs (/*const*/ struct stinger *S,
                      const int64_t nsrc, const int64_t * srclist_in,

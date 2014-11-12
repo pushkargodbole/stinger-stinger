@@ -17,12 +17,6 @@
 #define NULLCHECK(X) do { if(NULL == (X)) {printf("%s %d NULL: %s", __func__, __LINE__, #X); abort(); } } while(0);
 #define ZEROCHECK(X) do { if(0 == (X)) {printf("%s %d ZERO: %s", __func__, __LINE__, #X); abort(); } } while(0);
 
-#if defined(_OPENMP)
-#define OMP(x) _Pragma(x)
-#else
-#define OMP(x)
-#endif
-
 int
 i64_cmp(const void * a, const void * b) {
   return (*((int64_t *) a)) - (*((int64_t *) b));
@@ -44,10 +38,10 @@ prefix_sum (const int64_t n, int64_t *ary)
   tid = 0;
 #endif
 
-  OMP("omp master")
+  OMP(omp master)
     buf = alloca (nt * sizeof (*buf));
-  OMP("omp flush (buf)")
-  OMP("omp barrier")
+  OMP(omp flush (buf))
+  OMP(omp barrier)
 
   slice_begin = (tid * n) / nt;
   slice_end = ((tid + 1) * n) / nt; 
@@ -59,11 +53,11 @@ prefix_sum (const int64_t n, int64_t *ary)
   buf[tid] = tmp;
 
   /* prefix sum slice sums */
-  OMP("omp barrier")
-  OMP("omp single")
+  OMP(omp barrier)
+  OMP(omp single)
     for (k = 1; k < nt; ++k)
       buf[k] += buf[k-1];
-  OMP("omp barrier")
+  OMP(omp barrier)
 
   /* get slice sum */
   if (tid)
@@ -76,7 +70,7 @@ prefix_sum (const int64_t n, int64_t *ary)
   for (k = slice_begin + 1; k < slice_end; ++k) {
     ary[k] += ary[k-1];
   }
-  OMP("omp barrier")
+  OMP(omp barrier)
 
   return ary[n-1];
 }
@@ -223,7 +217,7 @@ int main(int argc, char *argv[]) {
 
   /* Generate edges */
   tic();
-  OMP("omp parallel")
+  OMP(omp parallel)
   {
     dxor128_env_t env;
     #if defined(_OPENMP)
@@ -232,7 +226,7 @@ int main(int argc, char *argv[]) {
       dxor128_seed(&env, 0);
     #endif
 
-    OMP("omp for")
+    OMP(omp for)
     for(uint64_t e = 0; e < ne; e++) {
       rmat_edge (&(src[e]), &(dst[e]), SCALE, A, B, C, D, &env);
 
@@ -259,7 +253,7 @@ int main(int argc, char *argv[]) {
 
   tic();
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(uint64_t e = 0; e < ne; e++) {
     if(src[e] != dst[e]) {
       stinger_int64_fetch_add(&(off[src[e]]), 1);
@@ -273,7 +267,7 @@ int main(int argc, char *argv[]) {
   /* Ind copy - ignore self loops */
   tic();
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(uint64_t e = 0; e < ne; e++) {
     if(src[e] != dst[e]) {
       uint64_t place = stinger_int64_fetch_add(&(off[src[e]]), 1);
@@ -288,7 +282,7 @@ int main(int argc, char *argv[]) {
   tic();
   of2++;
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(uint64_t v = 0; v < nv; v++) {
     qsort(ind + off[v], off[v+1] - off[v], sizeof(uint64_t), i64_cmp); 
     int64_t cur = off[v];
@@ -314,7 +308,7 @@ int main(int argc, char *argv[]) {
   /* Copy unique edges */
   tic();
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(uint64_t v = 0; v < nv; v++) {
     int64_t cur = off[v];
     int64_t cr2 = of2[v];
@@ -353,7 +347,7 @@ int main(int argc, char *argv[]) {
 
   NULLCHECK(actions = malloc(2 * NUM_ACTIONS * sizeof(int64_t)));
 
-  OMP("omp parallel")
+  OMP(omp parallel)
   {
     dxor128_env_t env;
 
@@ -364,7 +358,7 @@ int main(int argc, char *argv[]) {
       dxor128_seed(&env, 0);
     #endif
 
-    OMP("omp for")
+    OMP(omp for)
     for(uint64_t a = 0; a < NUM_ACTIONS; a++) {
       uint64_t place = stinger_int64_fetch_add(&a_count, 1);
       if(dxor128(&env) > P_delete) {

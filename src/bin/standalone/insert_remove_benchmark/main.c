@@ -52,9 +52,9 @@ main (const int argc, char *argv[])
   BATCH_SIZE_CHECK();
 
 #if defined(_OPENMP)
-  OMP("omp parallel")
+  OMP(omp parallel)
   {
-  OMP("omp master")
+  OMP(omp master)
   PRINT_STAT_INT64 ("num_threads", (long int) omp_get_num_threads());
   }
 #endif
@@ -89,7 +89,7 @@ main (const int argc, char *argv[])
 
     MTA("mta assert parallel")
     MTA("mta block dynamic schedule")
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t k = 0; k < endact - actno; k++) {
       const int64_t i = actions[2 * k];
       const int64_t j = actions[2 * k + 1];

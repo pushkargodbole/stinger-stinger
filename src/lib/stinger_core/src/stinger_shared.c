@@ -276,7 +276,7 @@ stinger_shared_new_full (char ** out, int64_t nv, int64_t nebs, int64_t netypes,
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
   MTA ("mta assert parallel")
   MTASTREAMS ()
   for (i = 0; i < netypes; ++i) {

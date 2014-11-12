@@ -98,14 +98,14 @@ realloc_graph (struct el * el, int64_t nv, int64_t ne)
 
   if (nv > el->nv) {
     if (nv < el->nv_orig) {
-      OMP("omp parallel for")
+      OMP(omp parallel for)
         for (intvtx_t k = el->nv; k < nv; ++k)
           el->d[k] = 0;
     } else {
       tmp = xrealloc (el->d, nv * sizeof (*el->d));
       if (!tmp) { err = 1; goto errout; }
       el->d = tmp;
-      OMP("omp parallel for")
+      OMP(omp parallel for)
         for (intvtx_t k = el->nv; k < nv; ++k)
           el->d[k] = 0;
       el->nv_orig = nv;
@@ -272,11 +272,11 @@ el_snarf_graph (const char * fname,
       abort ();
     }
     if (needs_bs) {
-      OMP("omp parallel for")
+      OMP(omp parallel for)
         for (int64_t k = 0; k < nv; ++k)
           g->d[k] = comm_bs64 (mem[k]);
     } else {
-      OMP("omp parallel for")
+      OMP(omp parallel for)
         for (int64_t k = 0; k < nv; ++k)
           g->d[k] = mem[k];
     }
@@ -287,11 +287,11 @@ el_snarf_graph (const char * fname,
       abort ();
     }
     if (needs_bs) {
-      OMP("omp parallel for")
+      OMP(omp parallel for)
         for (int64_t k = 0; k < 3*ne; ++k)
           g->el[k] = comm_bs64 (mem[k]);
     } else {
-      OMP("omp parallel for")
+      OMP(omp parallel for)
         for (int64_t k = 0; k < 3*ne; ++k)
           g->el[k] = mem[k];
     }
@@ -368,11 +368,11 @@ dump_el (const char * fname,
     goto err;
 
 #if defined(USE32BIT)
-  OMP("omp parallel") {
-    OMP("omp for nowait")
+  OMP(omp parallel) {
+    OMP(omp for nowait)
       for (size_t k = 0; k < nv; ++k)
         iwork[k] = D(g, k);
-    OMP("omp for")
+    OMP(omp for)
       for (size_t k = 0; k < ne; ++k) {
         iwork[nv+3*k] = I(g, k);
         iwork[nv+3*k+1] = J(g, k);
@@ -454,10 +454,10 @@ prefix_sum (const intvtx_t n, intvtx_t *ary)
 
   nt = omp_get_num_threads ();
   tid = omp_get_thread_num ();
-  OMP("omp master")
+  OMP(omp master)
     buf = xmalloc (nt * sizeof (*buf));
-  OMP("omp flush (buf)");
-  OMP("omp barrier");
+  OMP(omp flush (buf));
+  OMP(omp barrier);
 
   t1 = n / nt;
   t2 = n % nt;
@@ -468,11 +468,11 @@ prefix_sum (const intvtx_t n, intvtx_t *ary)
   for (k = slice_begin; k < slice_end; ++k)
     tmp += ary[k];
   buf[tid] = tmp;
-  OMP("omp barrier");
-  OMP("omp single")
+  OMP(omp barrier);
+  OMP(omp single)
     for (k = 1; k < nt; ++k)
       buf[k] += buf[k-1];
-  OMP("omp barrier");
+  OMP(omp barrier);
   tmp = buf[nt-1];
   if (tid)
     t1 = buf[tid-1];
@@ -483,8 +483,8 @@ prefix_sum (const intvtx_t n, intvtx_t *ary)
     ary[k] = t1;
     t1 += t;
   }
-  OMP("omp barrier");
-  OMP("omp single")
+  OMP(omp barrier);
+  OMP(omp single)
     free (buf);
   return t1;
 }
@@ -518,24 +518,24 @@ el_to_csr (const struct el gel)
   CDECL(gel);
   struct csr gcsr;
 
-  OMP("omp parallel") {
-    OMP("omp for reduction(+:ne_out)")
+  OMP(omp parallel) {
+    OMP(omp for reduction(+:ne_out))
       for (intvtx_t i = 0; i < nv; ++i)
         if (D(gel, i)) ++ne_out;
 
-    OMP("omp single") {
+    OMP(omp single) {
       gcsr = alloc_csr (nv, ne_out);
     }
-    OMP("omp flush (gcsr)");
-    OMP("omp barrier");
+    OMP(omp flush (gcsr));
+    OMP(omp barrier);
 
     DECLCSR(gcsr);
 
-    OMP("omp for")
+    OMP(omp for)
       for (intvtx_t i = 0; i < nv; ++i)
         if (D(gel, i)) XOFF(gcsr, i+1) = 1;
 
-    OMP("omp for")
+    OMP(omp for)
       for (intvtx_t k = 0; k < ne_in; ++k) {
         const intvtx_t i = I(gel, k);
         const intvtx_t j = J(gel, k);
@@ -545,7 +545,7 @@ el_to_csr (const struct el gel)
 
     prefix_sum (nv, &XOFF(gcsr, 1));
 
-    OMP("omp for")
+    OMP(omp for)
       for (intvtx_t i = 0; i < nv; ++i)
         if (D(gel, i)) {
           const size_t loc = XOFF(gcsr, i+1);
@@ -554,7 +554,7 @@ el_to_csr (const struct el gel)
           ++XOFF(gcsr, i+1);
         }
 
-    OMP("omp for")
+    OMP(omp for)
       for (intvtx_t k = 0; k < ne_in; ++k) {
         const intvtx_t i = I(gel, k);
         const intvtx_t j = J(gel, k);
@@ -584,21 +584,21 @@ el_eval_vtxvol_byrow (const struct el g,
   CDECL(g);
   const int64_t nv = g.nv;
 
-  OMP("omp parallel") {
-    OMP("omp for")
+  OMP(omp parallel) {
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i)
         vol[i] = D(g, i);
-    OMP("omp for")
+    OMP(omp for)
       for (int64_t i = 0; i < nv; ++i) {
         int64_t self_vol = 0;
         for (int64_t k = rowstart[i]; k < rowend[k]; ++k) {
           const int64_t j = J(g, k);
           const int64_t w = W(g, k);
-          OMP("omp atomic")
+          OMP(omp atomic)
             vol[j] += w;
           self_vol += w;
         }
-        OMP("omp atomic")
+        OMP(omp atomic)
           vol[i] += self_vol;
       }
   }
@@ -612,12 +612,12 @@ el_eval_vtxvol (const struct el g,
   const int64_t nv = g.nv;
   const int64_t ne = g.ne;
 
-  OMP("omp parallel")
+  OMP(omp parallel)
     {
-      OMP("omp for")
+      OMP(omp for)
       for (int64_t i = 0; i < nv; ++i)
         vol[i] = D(g, i);
-      OMP("omp for")
+      OMP(omp for)
       for (int64_t k = 0; k < ne; ++k) {
         const int64_t i = I(g, k);
         const int64_t j = J(g, k);
@@ -626,9 +626,9 @@ el_eval_vtxvol (const struct el g,
         assert (i < nv);
         assert (j >= 0);
         assert (j < nv);
-        OMP("omp atomic")
+        OMP(omp atomic)
           vol[i] += w;
-        OMP("omp atomic")
+        OMP(omp atomic)
           vol[j] += w;
       }
   }

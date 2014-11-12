@@ -179,7 +179,7 @@ main (const int argc, char *argv[])
 #if !defined(TRIVIAL_INSREM)
     MTA("mta assert parallel")
     MTA("mta block dynamic schedule")
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t k = 0; k < numActions; k++) {
       const int64_t i = actionStream[2 * k];
       const int64_t j = actionStream[2 * k + 1];
@@ -284,13 +284,13 @@ stinger_to_el (const struct stinger * S, const int64_t nv, const int64_t ne)
   memset (el.d, 0, nv * sizeof (*el.d));
   el.ne = 0;
   assert (el.el);
-  OMP("omp parallel") {
+  OMP(omp parallel) {
 #if !defined(__MTA__)
     struct insqueue q;
     q.n = 0;
 #endif
 
-    OMP("omp for") MTA("mta assert nodep")
+    OMP(omp for) MTA("mta assert nodep")
       for (int64_t i = 0; i < nv; ++i) {
 #if defined(__MTA__)
         struct insqueue q;

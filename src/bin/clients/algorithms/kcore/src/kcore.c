@@ -22,7 +22,7 @@ kcore_find(stinger_t *S, int64_t * labels, int64_t * counts, int64_t nv, int64_t
     changed = 0;
     k++;
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
       for(int64_t v = 0; v < nv; v++) {
 	if(labels[v] == k) {
 	  int64_t count = 0;
@@ -34,7 +34,7 @@ kcore_find(stinger_t *S, int64_t * labels, int64_t * counts, int64_t nv, int64_t
 	}
       }
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
       for(int64_t v = 0; v < nv; v++) {
 	if(labels[v] == k) {
 	  int64_t count = 0;

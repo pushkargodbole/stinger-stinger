@@ -12,19 +12,19 @@ update_rates(stinger_registered_alg * a, int64_t nv, double * vel, double * acce
 {
   int64_t * count = calloc(nv, sizeof(int64_t));
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(int64_t i = 0; i < a->num_insertions; i++) {
     stinger_int64_fetch_add(count + a->insertions[i].source,1);
     stinger_int64_fetch_add(count + a->insertions[i].destination,1);
   }
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(int64_t i = 0; i < a->num_deletions; i++) {
     stinger_int64_fetch_add(count + a->deletions[i].source,1);
     stinger_int64_fetch_add(count + a->deletions[i].destination,1);
   }
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(int64_t v = 0; v < nv; v++) {
     accel[v] = (accel_keep * accel[v]) + (1 - accel_keep) * (count[v] - vel[v]);
     vel[v] = (vel_keep * vel[v]) + (1 - vel_keep) * count[v];

@@ -25,13 +25,13 @@ SortStart (int64_t NV, int64_t NE, int64_t * sv1, int64_t * ev1, int64_t * w1, i
 {
   int64_t i;
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for (i = 0; i < NV + 2; i++) start[i] = 0;
 
   start += 2;
 
   /* Histogram key values */
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   MTA("mta assert no alias *start *sv1")
   for (i = 0; i < NE; i++) stinger_int64_fetch_add(&start[sv1[i]], 1);
 
@@ -41,7 +41,7 @@ SortStart (int64_t NV, int64_t NE, int64_t * sv1, int64_t * ev1, int64_t * w1, i
   start --;
 
   /* Move edges into its bucket's segment */
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   MTA("mta assert no dependence")
   for (i = 0; i < NE; i++) {
     int64_t index = stinger_int64_fetch_add(&start[sv1[i]], 1);

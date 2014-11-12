@@ -264,7 +264,7 @@ stinger_remove_and_insert_batch (struct stinger * G, int64_t type,
                                  int64_t * act)
 {
   /* Separate each vertex's batch into deletions and insertions */
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
   MTA ("mta assert nodep")
   for (int k = 0; k < n; k++) {
     const int64_t i = act[2 * deloff[k]];

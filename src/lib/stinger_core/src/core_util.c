@@ -57,7 +57,7 @@ bs64 (int64_t xin)
 void
 bs64_n (size_t n, int64_t * restrict d)
 {
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     for (size_t k = 0; k < n; ++k)
       d[k] = bs64 (d[k]);
 }
@@ -93,10 +93,10 @@ prefix_sum (const int64_t n, int64_t *ary)
   nt = omp_get_num_threads ();
   tid = omp_get_thread_num ();
 
-  OMP("omp master")
+  OMP(omp master)
     buf = alloca (nt * sizeof (*buf));
-  OMP("omp flush (buf)");
-  OMP("omp barrier");
+  OMP(omp flush (buf));
+  OMP(omp barrier);
 
   slice_begin = (tid * n) / nt;
   slice_end = ((tid + 1) * n) / nt; 
@@ -108,11 +108,11 @@ prefix_sum (const int64_t n, int64_t *ary)
   buf[tid] = tmp;
 
   /* prefix sum slice sums */
-  OMP("omp barrier");
-  OMP("omp single")
+  OMP(omp barrier);
+  OMP(omp single)
     for (k = 1; k < nt; ++k)
       buf[k] += buf[k-1];
-  OMP("omp barrier");
+  OMP(omp barrier);
 
   /* get slice sum */
   if (tid)
@@ -125,7 +125,7 @@ prefix_sum (const int64_t n, int64_t *ary)
   for (k = slice_begin + 1; k < slice_end; ++k) {
     ary[k] += ary[k-1];
   }
-  OMP("omp barrier");
+  OMP(omp barrier);
 
   return ary[n-1];
 }

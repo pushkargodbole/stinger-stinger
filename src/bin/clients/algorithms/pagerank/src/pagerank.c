@@ -19,7 +19,7 @@ page_rank(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double eps
   double delta = 1;
 
   while(delta > epsilon && iter > 0) {
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < NV; v++) {
       tmp_pr[v] = 0;
 
@@ -29,13 +29,13 @@ page_rank(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double eps
       } STINGER_FORALL_EDGES_OF_VTX_END();
     }
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < NV; v++) {
       tmp_pr[v] = tmp_pr[v] * dampingfactor + (((double)(1-dampingfactor)) / ((double)NV));
     }
 
     delta = 0;
-    OMP("omp parallel for reduction(+:delta)")
+    OMP(omp parallel for reduction(+:delta))
     for(uint64_t v = 0; v < NV; v++) {
       double mydelta = tmp_pr[v] - pr[v];
       if(mydelta < 0)
@@ -43,7 +43,7 @@ page_rank(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, double eps
       delta += mydelta;
     }
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < NV; v++) {
       pr[v] = tmp_pr[v];
     }
@@ -67,7 +67,7 @@ page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, doubl
   double delta = 1;
 
   while(delta > epsilon && iter > 0) {
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < NV; v++) {
       tmp_pr[v] = 0;
 
@@ -77,13 +77,13 @@ page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, doubl
       } STINGER_FORALL_EDGES_OF_TYPE_OF_VTX_END();
     }
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < NV; v++) {
       tmp_pr[v] = tmp_pr[v] * dampingfactor + (((double)(1-dampingfactor)) / ((double)NV));
     }
 
     delta = 0;
-    OMP("omp parallel for reduction(+:delta)")
+    OMP(omp parallel for reduction(+:delta))
     for(uint64_t v = 0; v < NV; v++) {
       double mydelta = tmp_pr[v] - pr[v];
       if(mydelta < 0)
@@ -91,7 +91,7 @@ page_rank_type(stinger_t * S, int64_t NV, double * pr, double * tmp_pr_in, doubl
       delta += mydelta;
     }
 
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     for(uint64_t v = 0; v < NV; v++) {
       pr[v] = tmp_pr[v];
     }
@@ -126,7 +126,7 @@ main(int argc, char *argv[])
   }
 
   double * pr = (double *)alg->alg_data;
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(uint64_t v = 0; v < alg->stinger->max_nv; v++) {
     pr[v] = 1 / ((double)alg->stinger->max_nv);
   }

@@ -26,11 +26,11 @@ depold_community_step(stinger_t * S, int64_t nv, int64_t deg_thresh, double simi
 
   int64_t removed_edges = 0;
 
-  OMP("omp parallel reduction(+:removed_edges)")
+  OMP(omp parallel reduction(+:removed_edges))
   {
     std::queue<local_edge_t> deletions;
 
-    OMP("omp for")
+    OMP(omp for)
     for(uint64_t n = 0; n < nv; n++) {
       if(stinger_outdegree(S, n) < deg_thresh) {
 	int_ht_seq_t neighbors;
@@ -105,7 +105,7 @@ static void
 depold_cc(stinger_t * S, int64_t nv, int64_t deg_thresh, int64_t * labels)
 {
   /* Initialize each vertex with its own component label in parallel */
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     for (uint64_t i = 0; i < nv; i++) {
       labels[i] = i;
     }
@@ -133,7 +133,7 @@ depold_cc(stinger_t * S, int64_t nv, int64_t deg_thresh, int64_t * labels)
       break;
 
     /* Tree climbing with OpenMP parallel for */
-    OMP ("omp parallel for")
+    OMP(omp parallel for)
       MTA ("mta assert nodep")
       for (uint64_t i = 0; i < nv; i++) {
         while (labels[i] != labels[labels[i]])
@@ -148,7 +148,7 @@ depold_post(stinger_t * S, int64_t nv, int64_t deg_thresh, int64_t * labels)
   int64_t * total_deg = (int64_t *)xcalloc(nv, sizeof(int64_t));
   int64_t * members = (int64_t *)xcalloc(nv, sizeof(int64_t));
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(int64_t v = 0; v < nv; v++) {
     if(stinger_outdegree(S, v) < deg_thresh) {
       stinger_int64_fetch_add(members + labels[v], 1);
@@ -164,7 +164,7 @@ depold_post(stinger_t * S, int64_t nv, int64_t deg_thresh, int64_t * labels)
     STINGER_PARALLEL_FORALL_EDGES_END ();
   }
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(int64_t v = 0; v < nv; v++) {
     if(stinger_outdegree(S, v) >= deg_thresh) {
       int_hm_seq_t * groups = int_hm_seq_new(deg_thresh * deg_thresh);

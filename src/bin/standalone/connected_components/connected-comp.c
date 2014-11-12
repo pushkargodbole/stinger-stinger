@@ -223,7 +223,7 @@ spanning_tree_is_good (int64_t * restrict d, int64_t * restrict tree,
                        int64_t nv)
 {
   int rtn = 0;
-  OMP ("omp parallel for reduction(+:rtn)")
+  OMP(omp parallel for reduction(+:rtn))
     for (uint64_t i = 0; i < nv; i++) {
       uint64_t j = i;
       while (j != tree[j])
@@ -248,10 +248,10 @@ connected_components_edge (const size_t nv, const size_t ne,
     freemarks = 1;
   }
 
-  OMP ("omp parallel") {
+  OMP(omp parallel) {
     while (1) {
-      OMP ("omp single") nchanged = 0;
-      MTA ("mta assert nodep") OMP ("omp for reduction(+:nchanged)")
+      OMP(omp single) nchanged = 0;
+      MTA ("mta assert nodep") OMP(omp for reduction(+:nchanged))
         for (int64_t k = 0; k < ne; ++k) {
           const int64_t i = sV[k];
           const int64_t j = eV[k];
@@ -262,13 +262,13 @@ connected_components_edge (const size_t nv, const size_t ne,
         }
       if (!nchanged)
         break;
-      MTA ("mta assert nodep") OMP ("omp for")
+      MTA ("mta assert nodep") OMP(omp for)
         for (int64_t i = 0; i < nv; ++i)
           while (D[i] != D[D[i]])
             D[i] = D[D[i]];
     }
 
-    MTA ("mta assert nodep") OMP ("omp for reduction(+:count)")
+    MTA ("mta assert nodep") OMP(omp for reduction(+:count))
       for (int64_t i = 0; i < nv; ++i) {
         while (D[i] != D[D[i]])
           D[i] = D[D[i]];
@@ -294,7 +294,7 @@ component_dist (const size_t nv, int64_t * restrict d,
 
   uint64_t max = 0;
 
-  OMP ("omp parallel for") MTA ("mta assert nodep")
+  OMP(omp parallel for) MTA ("mta assert nodep")
     for (i = 0; i < nv; i++) {
       cardinality[i] = 0;
     }

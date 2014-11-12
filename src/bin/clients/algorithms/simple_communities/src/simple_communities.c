@@ -60,7 +60,7 @@ main(int argc, char *argv[])
   nv = stinger_max_active_vertex(alg->stinger)+1;
   cmap = (int64_t *)alg->alg_data;
 #define UPDATE_EXTERNAL_CMAP(CS) do {                   \
-    OMP("omp parallel for")                             \
+    OMP(omp parallel for)                             \
       for (intvtx_t k = 0; k < CS.graph_nv; ++k)        \
         cmap[k] = CS.cmap[k];                           \
   } while (0)

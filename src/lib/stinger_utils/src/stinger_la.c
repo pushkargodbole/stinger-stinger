@@ -41,7 +41,7 @@ stinger_matvec(stinger_t * S, eweight_t * vec_in, int64_t nv, eweight_t * vec_ou
   eweight_t (*multiply)(eweight_t, eweight_t), eweight_t (*reduce)(eweight_t, eweight_t), 
   eweight_t empty)
 {
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for(int64_t v = 0; v < nv; v++) {
     eweight_t out = empty;
     eweight_t cur = empty;

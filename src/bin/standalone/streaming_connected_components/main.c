@@ -109,7 +109,7 @@ main (const int argc, char *argv[])
 #endif
 
   /* activate threads */
-  OMP("omp parallel for")
+  OMP(omp parallel for)
     MTA("mta assert nodep")
     for (int64_t k = 0; k < nv; ++k) {
       ncomp[k] = -1;
@@ -226,7 +226,7 @@ main (const int argc, char *argv[])
     tic ();
 
 #if USE_BIT_ARRAY
-    OMP("omp parallel for")
+    OMP(omp parallel for)
       for (int64_t k = 0; k < nv; k++) {
         marks[k] = 0;
       }
@@ -239,7 +239,7 @@ main (const int argc, char *argv[])
 #if USE_BIT_ARRAY
     MTA("mta assert nodep")
       MTA("mta block schedule")
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (int k = actno; k < endact; k++) {
         const int64_t i = ACTI(k);
         const int64_t j = ACTJ(k);
@@ -273,7 +273,7 @@ main (const int argc, char *argv[])
     stinger_remove_and_insert_batch (S, 0, actno+1, N, insoff, deloff, act);
 
 #if USE_BIT_ARRAY
-    OMP("omp parallel for")
+    OMP(omp parallel for)
       for (int64_t k = 0; k < nv; k++) {
         marks[k] = 0;
       }
@@ -281,7 +281,7 @@ main (const int argc, char *argv[])
     int64_t head = 0;
     /* Build bit arrays for each vertex with an incident deletion */
     MTA("mta assert nodep")
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (int64_t k = 0; k < ones; k+=2) {
         const int64_t i = delA[k];
         if (stinger_int64_fetch_add(&marks[i], 1)==0) {
@@ -316,7 +316,7 @@ main (const int argc, char *argv[])
     head = 0;
     int64_t no = 0;
     MTA("mta assert nodep")
-      OMP("omp parallel for")
+      OMP(omp parallel for)
       for (int64_t k = 0; k < ones; k+=2) {
         const int64_t i = delA[k];
         const int64_t j = delA[k+1];
@@ -368,7 +368,7 @@ main (const int argc, char *argv[])
 
 #if CHECK_ACCURACY
     connected_components_stinger_edge_parallel_and_tree(nv, ne, S, tempcomp, NULL, temptree);
-    OMP("omp parallel for reduction(+:deletes_that_split)")
+    OMP(omp parallel for reduction(+:deletes_that_split))
       for (int64_t k = 0; k < ones; k+=2) {
         if(tempcomp[delA[k]] != tempcomp[delA[k+1]])
           deletes_that_split++;
@@ -391,7 +391,7 @@ main (const int argc, char *argv[])
         int64_t incr = 0;
 
         MTA("mta assert nodep")
-          OMP("omp parallel for")
+          OMP(omp parallel for)
           for (int k = 0; k < n; k++) {
             const int64_t i = ACTI2(deloff[k]);
             assert(i >= 0);
@@ -415,7 +415,7 @@ main (const int argc, char *argv[])
 
         num_comp = connected_components_edge(nv, incr, m1, m2, ncomp);
 
-        OMP("omp parallel for")
+        OMP(omp parallel for)
           for(int k = 0; k < n; k++) {
             const int64_t i = willchange[k];
             if(ncomp[i] != i) {

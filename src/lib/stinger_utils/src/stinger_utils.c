@@ -175,7 +175,7 @@ bs64 (int64_t xin)
 void
 bs64_n (size_t n, int64_t * restrict d)
 {
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     for (size_t k = 0; k < n; ++k)
       d[k] = bs64 (d[k]);
 }
@@ -471,7 +471,7 @@ stinger_to_sorted_csr (const struct stinger *G, const int64_t nv,
 {
   stinger_to_unsorted_csr(G, nv, off_out, ind_out, weight_out, timefirst_out, timerecent_out, type_out);
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
   MTA ("mta assert nodep")
   MTA ("mta interleave schedule")
   for(int64_t i = 0; i < nv; i++) {
@@ -559,7 +559,7 @@ stinger_to_unsorted_csr (const struct stinger *G, const int64_t nv,
   if(timerecent_out) timerecent = xmalloc (t * sizeof (int64_t));
   if(type_out) type = xmalloc (t * sizeof (int64_t));
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
   MTA ("mta assert nodep")
   MTA ("mta interleave schedule")
   for (int64_t i = 0; i < nv; ++i) {
@@ -683,14 +683,14 @@ edge_list_to_csr (int64_t nv, int64_t ne,
 {
   int64_t i;
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     for (i = 0; i < nv + 2; i++)
       offset[i] = 0;
 
   offset += 2;
 
   /* Histogram source vertices for outer sort */
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     MTA ("mta assert no alias *offset *sv1")
     for (i = 0; i < ne; i++)
       stinger_int64_fetch_add (&offset[sv1[i]], 1);
@@ -702,7 +702,7 @@ edge_list_to_csr (int64_t nv, int64_t ne,
   offset--;
 
   if(timeRecent && timeFirst) {
-    OMP ("omp parallel for") MTA ("mta assert nodep")
+    OMP(omp parallel for) MTA ("mta assert nodep")
     for (i = 0; i < ne; i++) {
       int64_t index = stinger_int64_fetch_add (&offset[sv1[i]], 1);
       ev2[index] = ev1[i];
@@ -711,7 +711,7 @@ edge_list_to_csr (int64_t nv, int64_t ne,
       t2[index] = timeRecent[i];
     }
   } else {
-    OMP ("omp parallel for") MTA ("mta assert nodep")
+    OMP(omp parallel for) MTA ("mta assert nodep")
     for (i = 0; i < ne; i++) {
       int64_t index = stinger_int64_fetch_add (&offset[sv1[i]], 1);
       ev2[index] = ev1[i];
@@ -929,7 +929,7 @@ bucket_sort_pairs (int64_t *array, size_t num)
 
   int64_t *start = xmalloc ( (range+2) * sizeof(int64_t) );
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for (i = 0; i < range + 2; i++)
     start[i] = 0;
 
@@ -947,7 +947,7 @@ bucket_sort_pairs (int64_t *array, size_t num)
   start --;
 
   /* Move edges into its bucket's segment */
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   MTA("mta assert nodep")
   for (i = 0; i < num<<1; i+=2) {
     int64_t index = stinger_int64_fetch_add(start+array[i]+offset, 2);
@@ -956,14 +956,14 @@ bucket_sort_pairs (int64_t *array, size_t num)
   } 
 
   /* Copy back from tmp to the original array */
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   for (i = 0; i < num<<1; i++) {
     array[i] = tmp[i];
   }
 
   start--;
 
-  OMP("omp parallel for")
+  OMP(omp parallel for)
   MTA("mta assert parallel")
   for (i = 0; i < range; i++) {
     int64_t degree = start[i+1] - start[i];
@@ -1227,10 +1227,10 @@ prefix_sum (const int64_t n, int64_t *ary)
   nt = omp_get_num_threads ();
   tid = omp_get_thread_num ();
 
-  OMP("omp master")
+  OMP(omp master)
     buf = alloca (nt * sizeof (*buf));
-  OMP("omp flush (buf)");
-  OMP("omp barrier");
+  OMP(omp flush (buf));
+  OMP(omp barrier);
 
   slice_begin = (tid * n) / nt;
   slice_end = ((tid + 1) * n) / nt; 
@@ -1242,11 +1242,11 @@ prefix_sum (const int64_t n, int64_t *ary)
   buf[tid] = tmp;
 
   /* prefix sum slice sums */
-  OMP("omp barrier");
-  OMP("omp single")
+  OMP(omp barrier);
+  OMP(omp single)
     for (k = 1; k < nt; ++k)
       buf[k] += buf[k-1];
-  OMP("omp barrier");
+  OMP(omp barrier);
 
   /* get slice sum */
   if (tid)
@@ -1259,7 +1259,7 @@ prefix_sum (const int64_t n, int64_t *ary)
   for (k = slice_begin + 1; k < slice_end; ++k) {
     ary[k] += ary[k-1];
   }
-  OMP("omp barrier");
+  OMP(omp barrier);
 
   return ary[n-1];
 }

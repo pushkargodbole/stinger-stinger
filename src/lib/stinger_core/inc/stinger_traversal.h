@@ -111,7 +111,7 @@ extern "C" {
     while(current_eb__ != ebpool_priv) {						\
       int64_t source__ = current_eb__->vertexID;			\
       int64_t type__ = current_eb__->etype;				\
-      OMP("omp parallel for")						\
+      OMP(omp parallel for)						\
       MTA("mta assert parallel")					\
       for(uint64_t i__ = 0; i__ < stinger_eb_high(current_eb__); i__++) { \
         if(!stinger_eb_is_blank(current_eb__, i__)) {                   \
@@ -133,7 +133,7 @@ extern "C" {
       int64_t source__ = current_eb__->vertexID;			\
       int64_t type__ = current_eb__->etype;				\
       if(current_eb__->etype == TYPE_) {				\
-        OMP("omp parallel for")						\
+        OMP(omp parallel for)						\
 	  MTA("mta assert parallel")					\
 	  for(uint64_t i__ = 0; i__ < stinger_eb_high(current_eb__); i__++) { \
 	    if(!stinger_eb_is_blank(current_eb__, i__)) {               \
@@ -171,7 +171,7 @@ extern "C" {
   do {									\
     MAP_STING(STINGER_); \
     struct stinger_eb * ebpool_priv = ebpool->ebpool; \
-    OMP("omp parallel for")						\
+    OMP(omp parallel for)						\
     MTA("mta assert parallel")						\
     for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) {	\
       struct stinger_eb *  current_eb__ = ebpool_priv+ ETA((STINGER_),(TYPE_))->blocks[p__]; \
@@ -245,11 +245,11 @@ extern "C" {
     const struct stinger * restrict S__ = (STINGER_);			\
     const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
     const int64_t source__ = (VTX_);					\
-    OMP("omp parallel") {                                               \
-      OMP("omp single") {                                               \
+    OMP(omp parallel) {                                               \
+      OMP(omp single) {                                               \
         int64_t ebp_k__ = vertices->vertices[source__].edges;			\
         while(ebp_k__) {                                                \
-          OMP("omp task untied firstprivate(ebp_k__)")                  \
+          OMP(omp task untied firstprivate(ebp_k__))                  \
             MTA("mta assert parallel")                                  \
             for(uint64_t i__ = 0; i__ < ebp__[ebp_k__].high; i__++) {   \
               if(!stinger_eb_is_blank(&ebp__[ebp_k__], i__)) {          \
@@ -263,7 +263,7 @@ extern "C" {
           ebp_k__ = ebp__[ebp_k__].next;                      \
         }                                                     \
       }                                                       \
-    } OMP("omp taskwait");                                    \
+    } OMP(omp taskwait);                                    \
   } while (0)
 
 #define STINGER_READ_ONLY_PARALLEL_FORALL_EDGES_OF_TYPE_OF_VTX_BEGIN(STINGER_,VTX_) \
@@ -271,16 +271,16 @@ extern "C" {
     CONST_MAP_STING(STINGER_); \
     const struct stinger * restrict S__ = (STINGER_);			\
     struct stinger_eb * ebpool_priv = ebpool->ebpool;		\
-    OMP("omp parallel") {                                               \
+    OMP(omp parallel) {                                               \
       struct stinger_eb * restrict ebp__ = ebpool;                      \
       const int64_t source__ = (VTX_);                                  \
       const int64_t etype__ = (TYPE_);                                  \
-      OMP("omp single") {                                               \
+      OMP(omp single) {                                               \
         int64_t ebp_k__ = vertices->vertices[source__].edges;			\
         while(ebp_k__ && ebp__[ebp_k__].etype != etype__)               \
           ebp_k__ = ebp__[ebp_k__].next;                                \
         while(ebp_k__ && ebp__[ebp_k__].etype == etype__) {             \
-          OMP("omp task untied firstprivate(ebp_k__)")                  \
+          OMP(omp task untied firstprivate(ebp_k__))                  \
             MTA("mta assert parallel")                                  \
             for(uint64_t i__ = 0; i__ < ebp__[ebp_k__].high; i__++) {   \
               if(!stinger_eb_is_blank(&ebp__[ebp_k__], i__)) {          \
@@ -294,7 +294,7 @@ extern "C" {
           ebp_k__ = ebp__[ebp_k__].next;                      \
         }                                                     \
       }                                                       \
-    } OMP("omp taskwait");                                    \
+    } OMP(omp taskwait);                                    \
   } while (0)
 
 
@@ -328,13 +328,13 @@ extern "C" {
         const struct stinger * restrict S__ = (STINGER_);             \
         const int64_t etype__ = (TYPE_);                              \
 	const struct stinger_eb * restrict ebp__ = ebpool->ebpool;	\
-        OMP("omp parallel") {                                           \
-          OMP("omp single") {                                           \
+        OMP(omp parallel) {                                           \
+          OMP(omp single) {                                           \
             for(uint64_t p__ = 0; p__ < ETA((STINGER_),(TYPE_))->high; p__++) { \
               int64_t ebp_k__ = ETA((STINGER_),(TYPE_))->blocks[p__];          \
               const int64_t source__ = ebp__[ebp_k__].vertexID;         \
               const int64_t type__ = ebp__[ebp_k__].etype;              \
-              OMP("omp task untied firstprivate(ebp_k__)")              \
+              OMP(omp task untied firstprivate(ebp_k__))              \
                 for(uint64_t i__ = 0; i__ < ebp__[ebp_k__].high; i__++) { \
                   if(!stinger_eb_is_blank(&ebp__[ebp_k__], i__)) {      \
 		    const struct stinger_edge local_current_edge__ = ebp__[ebp_k__].edges[i__]; \
@@ -345,7 +345,7 @@ extern "C" {
                   }                                                     \
                 }                                                       \
             }                                                           \
-            OMP("omp taskwait");                                        \
+            OMP(omp taskwait);                                        \
           }                                                             \
         }                                                               \
       } while (0)

@@ -89,9 +89,9 @@ sample_search(stinger_t * S, int64_t nv, int64_t nsamples, double * bc, int64_t 
   LOG_V_A("  > Beggining with %ld vertices and %ld samples", (long)nv, (long)nsamples);
 
   int64_t * found = xcalloc(nv, sizeof(int64_t));
-  OMP("omp parallel")
+  OMP(omp parallel)
   {
-    OMP("omp for")
+    OMP(omp for)
     for(int64_t v = 0; v < nv; v++) {
       found_count[v] = 0;
       bc[v] = 0;
@@ -102,12 +102,12 @@ sample_search(stinger_t * S, int64_t nv, int64_t nsamples, double * bc, int64_t 
     if(nv * 2 < nsamples) {
       int64_t min = nv < nsamples ? nv : nsamples;
 
-      OMP("omp for")
+      OMP(omp for)
       for(int64_t s = 0; s < min; s++) {
 	single_bc_search(S, nv, s, partials, found_count);
       }
     } else {
-      OMP("omp for")
+      OMP(omp for)
       for(int64_t s = 0; s < nsamples; s++) {
 	int64_t v = 0;
 
@@ -122,7 +122,7 @@ sample_search(stinger_t * S, int64_t nv, int64_t nsamples, double * bc, int64_t 
       }
     }
     
-    OMP("omp critical")
+    OMP(omp critical)
     {
       for(int64_t v = 0; v < nv; v++) {
 	bc[v] += partials[v];
@@ -248,7 +248,7 @@ main(int argc, char *argv[])
       if(do_weighted) {
 	sample_search(alg->stinger, nv, num_samples, sample_bc, times_found);
 
-	OMP("omp parallel for")
+	OMP(omp parallel for)
 	for(int64_t v = 0; v < nv; v++) {
 	  bc[v] = bc[v] * old_weighting + weighting* sample_bc[v];
 	}

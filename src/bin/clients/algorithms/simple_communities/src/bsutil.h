@@ -24,7 +24,7 @@ comm_bs64 (int64_t xin)
 static void
 comm_bs64_n (size_t n, int64_t * restrict d)
 {
-  OMP("omp parallel for")
+  OMP(omp parallel for)
     MTA("mta assert nodep")
     for (size_t k = 0; k < n; ++k)
       d[k] = comm_bs64 (d[k]);

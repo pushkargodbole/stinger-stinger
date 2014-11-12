@@ -234,7 +234,7 @@ get_from_ebpool (const struct stinger * S, eb_index_t *out, size_t k)
 	    "       information on how to do this.\n");
       abort();
     }
-    OMP("omp parallel for")
+    OMP(omp parallel for)
       MTA ("mta assert nodep")
       MTASTREAMS ()MTA ("mta block schedule")
       for (size_t ki = 0; ki < k; ++ki)
@@ -274,16 +274,16 @@ stinger_max_num_etypes(stinger_t * S)
 uint64_t
 stinger_max_active_vertex(const struct stinger * S) {
   uint64_t out = 0;
-  OMP("omp parallel") {
+  OMP(omp parallel) {
     uint64_t local_max = 0;
-    OMP("omp for")
+    OMP(omp for)
     for(uint64_t i = 0; i < (S->max_nv); i++) {
       if((stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) && 
 	i > local_max) {
 	local_max = i;
       }
     }
-    OMP("omp critical") {
+    OMP(omp critical) {
       if(local_max > out)
 	out = local_max;
     }
@@ -302,7 +302,7 @@ stinger_max_active_vertex(const struct stinger * S) {
 uint64_t
 stinger_num_active_vertices(const struct stinger * S) {
   uint64_t out = 0;
-  OMP("omp parallel for reduction(+:out)")
+  OMP(omp parallel for reduction(+:out))
   for(uint64_t i = 0; i < (S->max_nv); i++) {
     if(stinger_indegree_get(S, i) > 0 || stinger_outdegree_get(S, i) > 0) {
       out++;
@@ -374,7 +374,7 @@ int64_t
 stinger_edges_up_to(const struct stinger * S, int64_t nv)
 {
   uint64_t rtn = 0;
-  OMP("omp parallel for reduction(+:rtn)")
+  OMP(omp parallel for reduction(+:rtn))
     for (uint64_t i = 0; i < nv; i++) {
       rtn += stinger_outdegree_get(S, i);
     }
@@ -478,7 +478,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   MAP_STING(S);
   struct stinger_eb * ebpool_priv = ebpool->ebpool;
   // check blocks
-  OMP("omp parallel for reduction(|:returnCode)")
+  OMP(omp parallel for reduction(|:returnCode))
   MTA("mta assert nodep")
   for (uint64_t i = 0; i < NV; i++) {
     uint64_t curOutDegree = 0;
@@ -530,7 +530,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
       returnCode |= 0x00000080;
   }
 
-  OMP("omp parallel for reduction(|:returnCode)")
+  OMP(omp parallel for reduction(|:returnCode))
   MTA("mta assert nodep")
   for (uint64_t i = 0; i < NV; i++) {
     if (inDegree[i] != stinger_indegree_get(S,i))
@@ -550,7 +550,7 @@ stinger_consistency_check (struct stinger *S, uint64_t NV)
   stinger_to_sorted_csr (S, NV, &off, &ind, NULL, NULL, NULL, NULL);
 
   MTA ("mta assert nodep")
-  OMP ("omp parallel for reduction(+:count_self, count_duplicate)")
+  OMP(omp parallel for reduction(+:count_self, count_duplicate))
   for (int64_t k = 0; k < NV; k++)
   {
     int64_t myStart = off[k];
@@ -595,7 +595,7 @@ stinger_fragmentation (struct stinger *S, uint64_t NV, struct stinger_fragmentat
 
   MAP_STING(S);
   struct stinger_eb * ebpool_priv = ebpool->ebpool;
-  OMP ("omp parallel for reduction(+:numSpaces, numBlocks, numEdges)")
+  OMP(omp parallel for reduction(+:numSpaces, numBlocks, numEdges))
   for (uint64_t i = 0; i < NV; i++) {
     const struct stinger_eb *curBlock = ebpool_priv + stinger_vertex_edges_get(vertices, i);
 
@@ -744,7 +744,7 @@ struct stinger *stinger_new_full (int64_t nv, int64_t nebs, int64_t netypes, int
   ebpool->ebpool_tail = 1;
   ebpool->is_shared = 0;
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
   MTA ("mta assert parallel")
   MTASTREAMS ()
   for (i = 0; i < netypes; ++i) {
@@ -836,7 +836,7 @@ new_ebs (struct stinger * S, eb_index_t *out, size_t neb, int64_t etype,
 
   MAP_STING(S);
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     //MTA("mta assert nodep")
     MTASTREAMS ()MTA ("mta block schedule")
     //MTA("mta parallel single processor")
@@ -864,7 +864,7 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
 
   MAP_STING(G);
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     MTA ("mta assert nodep")
     MTASTREAMS ()MTA ("mta block schedule")
     for (size_t k = 0; k < neb; ++k) {
@@ -875,7 +875,7 @@ new_blk_ebs (eb_index_t *out, const struct stinger *restrict G,
       block->largeStamp = INT64_MIN;
     }
 
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     MTA ("mta assert nodep")
     MTASTREAMS ()MTA ("mta interleave schedule")
     for (int64_t v = 0; v < nvtx; ++v) {
@@ -1416,7 +1416,7 @@ stinger_set_initial_edges (struct stinger *G,
   G->cur_ne = off[nv];
 
   blkoff = xcalloc (nv + 1, sizeof (*blkoff));
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     for (int64_t v = 0; v < nv; ++v) {
       const int64_t deg = off[v + 1] - off[v];
       blkoff[v + 1] = (deg + STINGER_EDGEBLOCKSIZE - 1) / STINGER_EDGEBLOCKSIZE;
@@ -1427,7 +1427,7 @@ stinger_set_initial_edges (struct stinger *G,
   nblk_total = blkoff[nv];
 
   block = xcalloc (nblk_total, sizeof (*block));
-  OMP ("omp parallel for")
+  OMP(omp parallel for)
     MTA ("mta assert nodep") MTASTREAMS ()
     for (int64_t v = 0; v < nv; ++v) {
       const int64_t from = v;
@@ -1441,7 +1441,7 @@ stinger_set_initial_edges (struct stinger *G,
   /* XXX: AUGH! I cannot find what really is blocking parallelization. */
   MTA ("mta assert parallel")
     MTA ("mta dynamic schedule")
-    OMP ("omp parallel for")
+    OMP(omp parallel for)
     MTA ("mta assert noalias *block")
     MTA ("mta assert nodep *block")
     MTA ("mta assert noalias *G")
@@ -1863,7 +1863,7 @@ stinger_count_outdeg (struct stinger * G, int64_t v)
 
   STINGER_FORALL_EB_BEGIN (G, v, eb) {
     const size_t eblen = stinger_eb_high (eb);
-    OMP ("omp parallel for")
+    OMP(omp parallel for)
       MTA ("mta assert nodep")
       MTASTREAMS ()
       for (size_t ek = 0; ek < eblen; ++ek) {
@@ -1909,12 +1909,12 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
   int64_t n;
   int64_t *actk = xmalloc ((2 * 2 * nactions + 1) * sizeof (*actk));
 
-  OMP("omp parallel") {
+  OMP(omp parallel) {
   /* Copy & make i positive if necessary.
      Negative j still implies deletion. */
   MTA ("mta assert nodep")
     MTA ("mta block schedule")
-    OMP ("omp for")
+    OMP(omp for)
     for (int64_t k = 0; k < nactions; k++) {
       const int64_t i = actions[2 * k];
       const int64_t j = actions[2 * k + 1];
@@ -1930,7 +1930,7 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
       }
     }
 
-  OMP("omp single") {
+  OMP(omp single) {
   actlen = head;
 #if !defined(__MTA__)
   qsort (act, actlen, 2 * sizeof (act[0]), i2cmp); 
@@ -1945,7 +1945,7 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
 
   /* Find local indices... */
   MTA ("mta assert nodep")
-    OMP ("omp for")
+    OMP(omp for)
     for (int64_t k = 1; k < actlen; k++) {
       if (act[2 * k] != act[2 * (k - 1)]) {
         stinger_int64_fetch_add (&n, 1);
@@ -1958,11 +1958,11 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
   //XXX assert(actk[actlen-1] == n-1);
 
   MTA ("mta assert nodep")
-    OMP ("omp for")
+    OMP(omp for)
     for (int64_t k = 0; k <= n; k++)
       deloff[k] = 0;
 
-  OMP ("omp for")
+  OMP(omp for)
     MTA ("mta assert nodep")
     for (int64_t k = 0; k < actlen; k++)
       stinger_int64_fetch_add (&deloff[actk[k] + 1], 1);
@@ -1972,7 +1972,7 @@ stinger_sort_actions (int64_t nactions, int64_t * actions,
 
   MTA ("mta assert nodep")
     MTA ("mta loop norestructure")
-    OMP ("omp for")
+    OMP(omp for)
     for (int64_t k = 0; k < n; k++) {
       int off;
       const int endoff = deloff[k + 1];
@@ -2011,7 +2011,7 @@ stinger_remove_all_edges_of_type (struct stinger *G, int64_t type)
   MAP_STING(G);
   /* TODO fix bugs here */
   MTA("mta assert parallel")
-  OMP("omp parallel for reduction(+: ne_removed)")
+  OMP(omp parallel for reduction(+: ne_removed))
   for (uint64_t p = 0; p < ETA(G, type)->high; p++) {
     struct stinger_eb *current_eb = ebpool->ebpool + ETA(G,type)->blocks[p];
     int64_t thisVertex = current_eb->vertexID;
@@ -2071,7 +2071,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 
   for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     MTA("mta assert parallel")
     for(uint64_t block = 0; block < ETA(S,type)->high; block++) {
       struct stinger_eb * cureb = local_ebpool + ETA(S, type)->blocks[block];
@@ -2103,7 +2103,7 @@ stinger_save_to_file (struct stinger * S, uint64_t maxVtx, const char * stingerf
 
   for(int64_t type = 0; type < (S->max_netypes); type++) {
     struct stinger_eb * local_ebpool = ebpool->ebpool;
-    OMP("omp parallel for")
+    OMP(omp parallel for)
     MTA("mta assert parallel")
     for(uint64_t block = 0; block < ETA(S,type)->high; block++) {
       struct stinger_eb * cureb = local_ebpool + ETA(S,type)->blocks[block];

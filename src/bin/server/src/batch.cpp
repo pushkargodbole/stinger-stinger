@@ -129,14 +129,14 @@ process_batch(stinger_t * S, StingerBatch & batch)
 
 #define TS(ea_) do { const int64_t ts = (ea_).time(); if (ts > mxts) mxts = ts; if (ts < mnts) mnts = ts; } while (0)
 
-  OMP("omp parallel") {
+  OMP(omp parallel) {
     int64_t mxts = 0, mnts = std::numeric_limits<int64_t>::max();
     std::string src, dest; /* Thread-local buffers */
     switch (batch.type ()) {
 
       case NUMBERS_ONLY: {
 	if(server_state.convert_numbers_only_to_strings()) {
-	  OMP("omp for")
+	  OMP(omp for)
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
@@ -166,7 +166,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 
-	  OMP("omp for")
+	  OMP(omp for)
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
 	      if(batch.make_undirected()) {
@@ -193,7 +193,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 	} else {
-	  OMP("omp for")
+	  OMP(omp for)
 	    for (size_t i = 0; i < batch.insertions_size(); i++) {
 	      EdgeInsertion & in = *batch.mutable_insertions(i);
 	      int64_t u, v;
@@ -209,7 +209,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	      }
 	    }
 
-	  OMP("omp for")
+	  OMP(omp for)
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
 	      if(batch.make_undirected()) {
@@ -223,7 +223,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	}
 
-	OMP("omp for")
+	OMP(omp for)
 	  for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
 	    VertexUpdate & vup = *batch.mutable_vertex_updates(d);
 	    handle_vertex_names_types<NUMBERS_ONLY>(vup, S);
@@ -231,7 +231,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
       } break;
 
       case STRINGS_ONLY:
-	OMP("omp for")
+	OMP(omp for)
 	  for (size_t i = 0; i < batch.insertions_size(); i++) {
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
 	    int64_t u, v;
@@ -253,7 +253,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	  }
 
-	OMP("omp for")
+	OMP(omp for)
 	  for(size_t d = 0; d < batch.deletions_size(); d++) {
 	    EdgeDeletion & del = *batch.mutable_deletions(d);
 	    int64_t u, v;
@@ -277,7 +277,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	  }
 
-	OMP("omp for")
+	OMP(omp for)
 	  for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
 	    VertexUpdate & vup = *batch.mutable_vertex_updates(d);
 	    handle_vertex_names_types<STRINGS_ONLY>(vup, S);
@@ -285,7 +285,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	break;
 
       case MIXED:
-	OMP("omp for")
+	OMP(omp for)
 	  for (size_t i = 0; i < batch.insertions_size(); i++) {
 	    EdgeInsertion & in = *batch.mutable_insertions(i);
 	    int64_t u = -1, v = -1;
@@ -304,7 +304,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	  }
 
-	OMP("omp for")
+	OMP(omp for)
 	  for(size_t d = 0; d < batch.deletions_size(); d++) {
 	    EdgeDeletion & del = *batch.mutable_deletions(d);
 	    int64_t u, v;
@@ -350,7 +350,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    }
 	  }
 
-	OMP("omp for")
+	OMP(omp for)
 	  for(size_t d = 0; d < batch.vertex_updates_size(); d++) {
 	    VertexUpdate & vup = *batch.mutable_vertex_updates(d);
 	    handle_vertex_names_types<MIXED>(vup, S);
@@ -361,7 +361,7 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	abort ();
     }
 
-    OMP("omp critical") {
+    OMP(omp critical) {
       if (mxts > max_batch_ts) max_batch_ts = mxts;
       if (mnts < min_batch_ts) min_batch_ts = mnts;
     }
