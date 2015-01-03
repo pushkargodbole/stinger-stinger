@@ -763,7 +763,7 @@ void cstate_preproc (struct community_state * restrict cstate,
         const int64_t j = rem[2*k+1];
         const int64_t ci = cmap[i];
         const int64_t cj = cmap[j];
-        if (ci != cj) {
+        if (ci == cj) {
           append_to_vlist (&nvlist, vlist, mark, i);
           append_to_vlist (&nvlist, vlist, mark, j);
         }
