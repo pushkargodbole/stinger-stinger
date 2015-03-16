@@ -682,7 +682,7 @@ append_to_vlist (int64_t * restrict nvlist,
   /*   assert (mark[vlist[k]] == k); */
   /* } */
 
-  if (mark[i] < 0) {
+  if (mark[i] == -1) {
     int64_t where;
     if (bool_int64_compare_and_swap (&mark[i], -1, -2)) {
       assert (mark[i] == -2);
@@ -960,7 +960,7 @@ cstate_preproc_alg (struct community_state * restrict cstate,
         const int64_t j = rem[k].destination;
         const int64_t ci = cmap[i];
         const int64_t cj = cmap[j];
-        if (ci != cj)
+        if (ci == cj)
           ++n_new_edges;
       }
 
@@ -990,7 +990,7 @@ cstate_preproc_alg (struct community_state * restrict cstate,
         const int64_t j = rem[k].destination;
         const int64_t ci = cmap[i];
         const int64_t cj = cmap[j];
-        if (ci != cj) {
+        if (ci == cj) {
           append_to_vlist (&nvlist, vlist, mark, i);
           append_to_vlist (&nvlist, vlist, mark, j);
         }
