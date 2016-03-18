@@ -607,39 +607,6 @@ class community_state
             }
         }
         
-        void agglomerate2()
-        {
-            int64_t i = 1;
-            while(1)
-            {
-                int64_t u_max, v_max;
-                double max_dmod = 0;
-                for(int64_t v=0; v<nv; v++)
-                {
-                    if(active[v] == 1)
-                    {
-                        for(unordered_map<int64_t, int64_t>::iterator nbr_it=nbrs[v].begin(); nbr_it!=nbrs[v].end(); ++nbr_it)
-                        {
-                            int64_t nbr = nbr_it->first;
-                            if(active[nbr]==1 && v!=nbr)
-                            {
-                                double d_mod = dmod(v, nbr);
-                                if(d_mod > max_dmod)
-                                {
-                                    max_dmod = d_mod;
-                                    u_max = v;
-                                    v_max = nbr;
-                                }
-                            }
-                        }
-                    }
-                }
-                if (max_dmod <= 0) break;
-                merge(u_max, v_max);
-                i++;
-            }
-        }
-        
         void add_batch(const stinger_registered_alg * alg)
         {
             ResetDiagnostic("add_batch");
