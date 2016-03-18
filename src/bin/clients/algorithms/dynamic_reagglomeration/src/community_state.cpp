@@ -122,7 +122,6 @@ class community_state
         
         void change_parent(int64_t v, int64_t p) // Recursively change parent of vertex v and all its children to p
         {
-            //children[p].erase(-1); // Mark children[p] set as not empty (by removing -1 from its set)
             parents[v].push_back(make_pair(p, time));
             queue<int64_t> child_queue;
             if(children[v].size() > 0) child_queue.push(v);
@@ -384,7 +383,6 @@ class community_state
                 if(active[i]==1)
                 {
                     modularity += mod(i);
-                    //cout << i << ", " << get_adjacency(i, i) << ", " << volume(i) << ", " << mod(i) << endl;
                 }
             }
             return modularity;
@@ -436,7 +434,6 @@ class community_state
                 else cj = 0;
                 if(Leave+Stay > 0) cl = (double) Leave/(Leave+Stay);
                 else cl = 0;
-                //cout << v <<  " " << Join << " " << Stay << " " << Leave <<  " " << cj <<  " " << cl << endl;
                 Cj.push_back(cj);
                 Cl.push_back(cl);
             }
@@ -508,32 +505,6 @@ class community_state
             return stddev_csize;
         }
         
-        /*
-        void agglomerate()
-        {
-            double delta_mod = 0;
-            for(int64_t i=0;i<nv;i++)
-            {
-                while(i<nv && active[i]==0) i++;
-                if(i==nv) break;
-                for(map<int64_t, int64_t>::iterator nbr_it=nbrs[i].begin(); nbr_it!=nbrs[i].end(); ++nbr_it)
-                {
-                    int64_t nbr = nbr_it->first;
-                    if(active[nbr]==1 && i!=nbr)
-                    {
-                        double d_mod = dmod(i, nbr);
-                        if(d_mod > 0)
-                        {
-                            delta_mod += d_mod;
-                            int64_t parent = merge(i, nbr);
-                            if(parent==nbr) break;
-                        }
-                    }
-                }
-            }
-        }
-        */
-        
         void agglomerate_nodespan(string flag = "dynamic")
         {
             double delta_mod = 0;
@@ -583,28 +554,12 @@ class community_state
                 if(edges.size() == 0) return;
                 
                 set<int64_t> visited_nodes;
-                /*
-                cout << "--------------------------------------------------------" << endl;
-                for (set<pair<double, pair<int64_t, int64_t> > >::iterator it=edges.begin(); it!=edges.end(); ++it)
-                {
-                    cout << "(" << it ->first << ", " << it->second.first << ", " << it->second.second << ") ";
-                }
-                cout << endl;
-                */
                 for (set<pair<double, pair<int64_t, int64_t> > >::iterator it=edges.begin(); it!=edges.end(); ++it)
                 {
                     if(visited_nodes.find(it->second.first) == visited_nodes.end() &&
                        visited_nodes.find(it->second.second) == visited_nodes.end())
                     {
                         merge(it->second.first, it->second.second, flag);
-                        //cout << "Match: " << it ->first << " (" << it->second.first << ", " << it->second.second << ")" << endl;
-                        /*
-                        for(int64_t i=0;i<nv;i++)
-                        {
-                            cout << find(i).first << " ";
-                        }
-                        cout << endl;
-                        */
                         visited_nodes.insert(it->second.first);
                         visited_nodes.insert(it->second.second);
                     }
@@ -638,36 +593,17 @@ class community_state
                 
                 set<int64_t> visited_nodes;
                 
-                //cout << "--------------------- dmod list -----------------------" << endl;
-                /*
-                cout << "--------------------------------------------------------" << endl;
                 for (set<pair<double, pair<int64_t, int64_t> > >::iterator it=edges.begin(); it!=edges.end(); ++it)
                 {
-                    cout << "(" << it ->first << ", " << it->second.first << ", " << it->second.second << ") ";
-                }
-                cout << endl;
-                */
-                for (set<pair<double, pair<int64_t, int64_t> > >::iterator it=edges.begin(); it!=edges.end(); ++it)
-                {
-                    //cout << "(" << it->first << ", " << it->second.first << ", " << it->second.second << ")" << " ";
                     if(visited_nodes.find(it->second.first) == visited_nodes.end() &&
                        visited_nodes.find(it->second.second) == visited_nodes.end())
                     {
                         merge(it->second.first, it->second.second, flag);
-                        //cout << "Best first: " << it ->first << " (" << it->second.first << ", " << it->second.second << ")" << endl;
-                        /*
-                        for(int64_t i=0;i<nv;i++)
-                        {
-                            cout << find(i).first << " ";
-                        }
-                        cout << endl;
-                        */
                         visited_nodes.insert(it->second.first);
                         visited_nodes.insert(it->second.second);
                         break; // UUURGGHH!!!!!!
                     }
                 }
-                //cout << endl << "--------------------------------------------------" << endl;
             }
         }
         
@@ -700,7 +636,6 @@ class community_state
                 }
                 if (max_dmod <= 0) break;
                 merge(u_max, v_max);
-                //cout << i << " " << u_max << " " << v_max << " " << max_dmod << endl;
                 i++;
             }
         }
@@ -750,17 +685,6 @@ class community_state
                 const int64_t v = ins[i].destination;
                 const int64_t w = ins[i].weight;
                 ne++;
-                /*
-                if(find(u).first==find(v).first)
-                {
-                    int64_t parent = find(u).first;
-                    while(find(u).first==find(v).first)
-                    {
-                        split(parent);
-                        parent = find(u).first;
-                    }
-                }
-                */
                 edit_edge(u, v, 1);
             }
         }

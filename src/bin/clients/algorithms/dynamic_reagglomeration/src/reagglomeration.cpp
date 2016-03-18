@@ -116,81 +116,6 @@ main(int argc, char *argv[])
     // Initial static computation
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     S = alg->stinger;
-    /*
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        for(map<int64_t, int64_t>::iterator nbr_it=cstate_s.nbrs[i].begin(); nbr_it!=cstate_s.nbrs[i].end(); ++nbr_it)
-        {
-            cout << "(" << nbr_it->first << ", " << nbr_it->second << ") ";
-        }
-        cout << endl;
-    }
-        
-    cout << "_____________________________________________" << endl;    
-    
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.merge(1, 2);
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.merge(3, 4);
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.merge(0, 1);
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.merge(5, 3);
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.merge(1, 3);
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.split(1);
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cstate_s.edit_edge(2, 3, -1);
-    */
-    /*
-    modularity_s = cstate_s.update_mod();
-    modularity_d = cstate_d.update_mod();
-    cout << "Modularity (Static): " << modularity_s << endl;
-    cout << "Modularity (Dynamic): " << modularity_d << endl;
-    */
-    /*
-    cout << "________________________ Static ________________________________" << endl;
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cout << "________________________ Dynamic ________________________________" << endl;
-    for(int64_t i=0;i<cstate_d.nv;i++)
-    {
-        cout << cstate_d.find(i).first << " ";
-    }
-    cout << endl;
-    */
     cout << "--------------- Static init ------------------" << endl;
     tic();
     cstate_s.init(S);
@@ -205,20 +130,6 @@ main(int argc, char *argv[])
     cstate_d.agglomerate_match();
     //cstate_d.agglomerate_bestfirst();
     time_d = toc();
-    /*
-    cout << "________________________ Static ________________________________" << endl;
-    for(int64_t i=0;i<cstate_s.nv;i++)
-    {
-        cout << cstate_s.find(i).first << " ";
-    }
-    cout << endl;
-    cout << "________________________ Dynamic ________________________________" << endl;
-    for(int64_t i=0;i<cstate_d.nv;i++)
-    {
-        cout << cstate_d.find(i).first << " ";
-    }
-    cout << endl;
-    */
     modularity_s = cstate_s.update_mod();
     modularity_d = cstate_d.update_mod();
     soc_s = cstate_s.SizeofChange(S);
@@ -327,20 +238,6 @@ main(int argc, char *argv[])
             {
                 stinger_alg_end_pre(alg);
             }
-            //cout << cstate.dmod(0, 1) << endl;
-            //S = alg->stinger;
-            //cstate.init(S);
-            /*
-            for(int64_t i=0;i<cstate.nv;i++)
-            {
-                for(map<int64_t, int64_t>::iterator nbr_it=cstate.nbrs[i].begin(); nbr_it!=cstate.nbrs[i].end(); ++nbr_it)
-                {
-                    cout << "(" << nbr_it->first << ", " << nbr_it->second << ") ";
-                }
-                cout << endl;
-            }
-            cout << "........................................................." << endl;
-            */
             S = alg->stinger;
             cout << "--------------- Static ------------------" << endl;
             tic();
@@ -349,7 +246,6 @@ main(int argc, char *argv[])
             cstate_s.agglomerate_match("static");
             //cstate_s.agglomerate_bestfirst("static");
             time_s = toc();
-            //cout << "woohoo" << endl;
             cout << "--------------- Dynamic ------------------" << endl;
             tic();
             cstate_d.add_batch(alg);
@@ -357,7 +253,6 @@ main(int argc, char *argv[])
             cstate_d.agglomerate_match();
             //cstate_d.agglomerate_bestfirst();
             time_d = toc();
-            //cout << "woohoo1" << endl;
             modularity_s = cstate_s.update_mod();
             modularity_d = cstate_d.update_mod();
             soc_s = cstate_s.SizeofChange(S);
@@ -447,30 +342,6 @@ main(int argc, char *argv[])
             Nsplitedits_d.push_back(nsplitedits_d);
             Time_s.push_back(time_s);
             Time_d.push_back(time_d);
-            /*
-            for(int64_t i=0;i<cstate.nv;i++)
-            {
-                for(map<int64_t, int64_t>::iterator nbr_it=cstate.nbrs[i].begin(); nbr_it!=cstate.nbrs[i].end(); ++nbr_it)
-                {
-                    cout << "(" << nbr_it->first << ", " << nbr_it->second << ") ";
-                }
-                cout << endl;
-            }
-            */
-            /*
-            cout << "________________________ Static ________________________________" << endl;
-            for(int64_t i=0;i<cstate_s.nv;i++)
-            {
-                cout << cstate_s.find(i).first << " ";
-            }
-            cout << endl;
-            cout << "________________________ Dynamic ________________________________" << endl;
-            for(int64_t i=0;i<cstate_d.nv;i++)
-            {
-                cout << cstate_d.find(i).first << " ";
-            }
-            cout << endl;
-            */
             
             if(stinger_alg_begin_post(alg))
             {
