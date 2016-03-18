@@ -170,7 +170,10 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
 	      if(batch.make_undirected()) {
-		del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+		//del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+        int64_t edgewt = stinger_edgeweight(S, del.source(), del.destination(), del.type());
+        if(edgewt == 1) del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+        else del.set_result(stinger_incr_edge_pair(S, del.type(), del.source(), del.destination(), -1, 0));
 	      } else {
 		del.set_result(stinger_remove_edge(S, del.type(), del.source(), del.destination()));
 	      }
@@ -213,7 +216,10 @@ process_batch(stinger_t * S, StingerBatch & batch)
 	    for(size_t d = 0; d < batch.deletions_size(); d++) {
 	      EdgeDeletion & del = *batch.mutable_deletions(d);
 	      if(batch.make_undirected()) {
-		del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+        //del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+        int64_t edgewt = stinger_edgeweight(S, del.source(), del.destination(), del.type());
+        if(edgewt == 1) del.set_result(stinger_remove_edge_pair(S, del.type(), del.source(), del.destination()));
+        else del.set_result(stinger_incr_edge_pair(S, del.type(), del.source(), del.destination(), -1, 0));
 	      } else {
 		del.set_result(stinger_remove_edge(S, del.type(), del.source(), del.destination()));
 	      }
