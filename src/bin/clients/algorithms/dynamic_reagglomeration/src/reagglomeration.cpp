@@ -74,11 +74,13 @@ main(int argc, char *argv[])
     vector<int64_t> Nsplitedits_s;
     vector<int64_t> Nsplitedits_d;
     const struct stinger * S;
+    int port = 10103;
     for (int i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "--static") == 0) do_static = true;
         else if (strcmp(argv[i], "--dynamic") == 0) do_dynamic = true;
         else if (0 == strcmp(argv[i], "-nb")) nbatch = atoi(argv[i+1]);
+        else if (0 == strcmp(argv[i], "--port") || 0 == strcmp(argv[i], "-p")) port = atoi(argv[i+1]);
         else if (0 == strcmp(argv[i], "--help") || 0 == strcmp(argv[i], "-h"))
         {
             cout << endl; // Write help!
@@ -97,7 +99,7 @@ main(int argc, char *argv[])
     stinger_registered_alg * alg = stinger_register_alg(
         alg_name, // Algorithm name
         "localhost", // Host
-        10103, // Port
+        port, // Port
         0, // is.remote
         0, // map_private
         sizeof(int64_t), // data_per_vertex
