@@ -11,7 +11,7 @@ extern "C" {
   stinger_physmap_t * physmap = (stinger_physmap_t *)((X)->storage + (X)->physmap_start); \
   stinger_names_t * etype_names = (stinger_names_t *)((X)->storage + (X)->etype_names_start); \
   stinger_names_t * vtype_names = (stinger_names_t *)((X)->storage + (X)->vtype_names_start); \
-  uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
+  const uint8_t * _ETA = ((X)->storage + (X)->ETA_start); \
   struct stinger_ebpool * ebpool = (struct stinger_ebpool *)((X)->storage + (X)->ebpool_start);
 	  
 #define CONST_MAP_STING(X) \
