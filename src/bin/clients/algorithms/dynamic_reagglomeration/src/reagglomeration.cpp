@@ -24,7 +24,8 @@ bool do_static = false;
 bool do_dynamic = false;
 int nbatch;
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
     community_state cstate_s, cstate_d;
     double modularity_s, modularity_d;
@@ -74,24 +75,12 @@ int main(int argc, char *argv[])
     vector<int64_t> Nsplitedits_d;
     const struct stinger * S;
     int port = 10103;
-    string static_merge_policy = "match";
-    string dynamic_merge_policy = "match";
-    string inter_ins_bt = "ee";
-    string inter_rem_bt = "ee";
-    string intra_ins_bt = "ee";
-    string intra_rem_bt = "sep";
     for (int i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "--static") == 0) do_static = true;
         else if (strcmp(argv[i], "--dynamic") == 0) do_dynamic = true;
         else if (0 == strcmp(argv[i], "-nb")) nbatch = atoi(argv[i+1]);
         else if (0 == strcmp(argv[i], "--port") || 0 == strcmp(argv[i], "-p")) port = atoi(argv[i+1]);
-        else if (0 == strcmp(argv[i], "-smp")) static_merge_policy = argv[i+1];
-        else if (0 == strcmp(argv[i], "-dmp")) dynamic_merge_policy = argv[i+1];
-        else if (0 == strcmp(argv[i], "--interins")) inter_ins_bt = argv[i+1];
-        else if (0 == strcmp(argv[i], "--interrem")) inter_rem_bt = argv[i+1];
-        else if (0 == strcmp(argv[i], "--intrains")) intra_ins_bt = argv[i+1];
-        else if (0 == strcmp(argv[i], "--intrarem")) intra_rem_bt = argv[i+1];
         else if (0 == strcmp(argv[i], "--help") || 0 == strcmp(argv[i], "-h"))
         {
             cout << endl; // Write help!
@@ -99,9 +88,6 @@ int main(int argc, char *argv[])
     }
     
     if(do_static == false && do_dynamic == false) do_dynamic = true;
-    cstate_s.set_merge_policy(static_merge_policy);
-    cstate_d.set_merge_policy(dynamic_merge_policy);
-    cstate_d.set_bt_policy(inter_ins_bt, inter_rem_bt, intra_ins_bt, intra_rem_bt);
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Setup and register algorithm with the server
