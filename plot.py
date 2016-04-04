@@ -47,7 +47,7 @@ def Plot(filename, m1, m2=None, m3=None):
         plt.legend([p1], [header[c1]])
     elif c3 == None:
         plt.title(filename + '\n\n' + header[c1] + ' vs ' + header[c2])
-        plt.legend([p1, p2], [header[c1], header[c2]])
+        plt.legend([p1, p2], [header[c1], header[c2]], loc=1)
     else:
         plt.title(filename + '\n\n' + header[c1] + ' vs ' + header[c2] + ' vs ' + header[c3])
         plt.legend([p1, p2, p3], [header[c1], header[c2], header[c3]])
