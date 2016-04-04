@@ -24,8 +24,7 @@ bool do_static = false;
 bool do_dynamic = false;
 int nbatch;
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     community_state cstate_s, cstate_d;
     double modularity_s, modularity_d;
@@ -75,12 +74,24 @@ main(int argc, char *argv[])
     vector<int64_t> Nsplitedits_d;
     const struct stinger * S;
     int port = 10103;
+    string static_merge_policy = "match";
+    string dynamic_merge_policy = "match";
+    string inter_ins_bt = "ee";
+    string inter_rem_bt = "ee";
+    string intra_ins_bt = "ee";
+    string intra_rem_bt = "sep";
     for (int i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "--static") == 0) do_static = true;
         else if (strcmp(argv[i], "--dynamic") == 0) do_dynamic = true;
         else if (0 == strcmp(argv[i], "-nb")) nbatch = atoi(argv[i+1]);
         else if (0 == strcmp(argv[i], "--port") || 0 == strcmp(argv[i], "-p")) port = atoi(argv[i+1]);
+        else if (0 == strcmp(argv[i], "-smp")) static_merge_policy = argv[i+1];
+        else if (0 == strcmp(argv[i], "-dmp")) dynamic_merge_policy = argv[i+1];
+        else if (0 == strcmp(argv[i], "--interins")) inter_ins_bt = argv[i+1];
+        else if (0 == strcmp(argv[i], "--interrem")) inter_rem_bt = argv[i+1];
+        else if (0 == strcmp(argv[i], "--intrains")) intra_ins_bt = argv[i+1];
+        else if (0 == strcmp(argv[i], "--intrarem")) intra_rem_bt = argv[i+1];
         else if (0 == strcmp(argv[i], "--help") || 0 == strcmp(argv[i], "-h"))
         {
             cout << endl; // Write help!
@@ -88,6 +99,9 @@ main(int argc, char *argv[])
     }
     
     if(do_static == false && do_dynamic == false) do_dynamic = true;
+    cstate_s.set_merge_policy(static_merge_policy);
+    cstate_d.set_merge_policy(dynamic_merge_policy);
+    cstate_d.set_bt_policy(inter_ins_bt, inter_rem_bt, intra_ins_bt, intra_rem_bt);
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // Setup and register algorithm with the server
@@ -363,4 +377,3 @@ main(int argc, char *argv[])
         cout << i << " " << modularities_s[i] << " " << modularities_d[i] << " " << SOC_s[i] << " " << SOC_d[i] << " " << Ncoms_s[i] << " " << Ncoms_d[i] << " " << Max_csize_s[i] << " " << Max_csize_d[i] << " " << Min_csize_s[i] << " " << Min_csize_d[i] << " " << Mean_csize_s[i] << " " << Mean_csize_d[i] << " " << Stddev_csize_s[i] << " " << Stddev_csize_d[i] << " " << Time_s[i] << " " << Time_d[i] << " " << Nedges_s[i] << " " << Nedges_d[i] << " " << Nedit_edge_s[i] << " " << Nedit_edge_d[i] << " " << Nmerge_s[i] << " " << Nmerge_d[i] << " " << Nsplit_s[i] << " " << Nsplit_d[i] << " " << Nedit_edgeedits_s[i] << " " << Nedit_edgeedits_d[i] << " " << Nmergeedits_s[i] << " " << Nmergeedits_d[i] << " " << Nsplitedits_s[i] << " " << Nsplitedits_d[i] << endl;
     }
 }
-
