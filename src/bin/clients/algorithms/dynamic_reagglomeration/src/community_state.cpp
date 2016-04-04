@@ -44,6 +44,12 @@ class community_state
         double ne; // Number of edges
         double modularity;
         int64_t time;
+        string inter_ins_bt = "ee"; // Inter community edge insertion backtracking policy [Default: ee (Edit Edge)]
+        string inter_rem_bt = "ee"; // Inter community edge removal backtracking policy [Default: ee (Edit Edge)]
+        string intra_ins_bt = "ee"; // Intra community edge insertion backtracking policy [Default: ee (Edit Edge)]
+        string intra_rem_bt = "sep"; // Intra community edge removal backtracking policy [Default: sep (Split to Separation)]
+        
+        string merge_policy = "match"; //Merge policy for agglomeration [Default: match (Greedy Edge Matching)]
         
         unordered_map<string, int64_t> Diagnostic;
         void ResetDiagnostic(string flag = "init")
@@ -505,6 +511,22 @@ class community_state
             return stddev_csize;
         }
         
+        void set_merge_policy(string mergepolicy)
+        {
+            if(mergepolicy!="nodespan" && mergepolicy!="match" && mergepolicy!="bestfirst")
+            {
+                cout << "Possible Merge Policies:" << endl
+                     << "1. nodespan" << endl
+                     << "2. match" << endl
+                     << "3. bestfirst" << endl
+                     << mergepolicy << " given." << endl;
+                throw;
+            }
+            
+            merge_policy = mergepolicy;
+            cout << "Merge Policy: " << merge_policy << endl;
+        }
+        
         void agglomerate_nodespan(string flag = "dynamic")
         {
             double delta_mod = 0;
@@ -569,10 +591,10 @@ class community_state
         
         void agglomerate_bestfirst(string flag = "dynamic")
         {
-            bool(*edge_compare_ptr)(const pair<double, pair<int64_t, int64_t> >&, const pair<double, pair<int64_t, int64_t> >&) = edge_compare;
             while(1)
             {
-                set<pair<double, pair<int64_t, int64_t> >, bool(*)(const pair<double, pair<int64_t, int64_t> >&, const pair<double, pair<int64_t, int64_t> >&) > edges (edge_compare_ptr);
+                double best_dmod = 0;
+                pair<int64_t, int64_t> best_edge;
                 for(int64_t v=0; v<nv; v++)
                 {
                     if(active[v] == 1)
@@ -583,28 +605,85 @@ class community_state
                             if(active[nbr]==1 && v<nbr)
                             {
                                 double d_mod = dmod(v, nbr);
-                                if(d_mod > 0) edges.insert(make_pair(d_mod, make_pair(v, nbr)));
+                                if(d_mod > best_dmod)
+                                {
+                                    best_dmod = d_mod;
+                                    best_edge = make_pair(v, nbr);
+                                }
                             }
                         }
                     }
                 }
                 
-                if(edges.size() == 0) return;
+                if(best_dmod == 0) return;
                 
-                set<int64_t> visited_nodes;
-                
-                for (set<pair<double, pair<int64_t, int64_t> > >::iterator it=edges.begin(); it!=edges.end(); ++it)
-                {
-                    if(visited_nodes.find(it->second.first) == visited_nodes.end() &&
-                       visited_nodes.find(it->second.second) == visited_nodes.end())
-                    {
-                        merge(it->second.first, it->second.second, flag);
-                        visited_nodes.insert(it->second.first);
-                        visited_nodes.insert(it->second.second);
-                        break; // UUURGGHH!!!!!!
-                    }
-                }
+                merge(best_edge.first, best_edge.second, flag);
             }
+        }
+        
+        void agglomerate(string flag = "dynamic")
+        {
+            if(merge_policy == "nodespan") agglomerate_nodespan(flag);
+            if(merge_policy == "match") agglomerate_match(flag);
+            if(merge_policy == "bestfirst") agglomerate_bestfirst(flag);
+        }
+        
+        void set_bt_policy(string interinsbt="ee", string interrembt="ee", string intrainsbt="ee", string intrarembt="sep")
+        {
+            //Inter community edge insertion backtracking policy: Edit Edge or Split to Singletons
+            if(interinsbt !="ee" && interinsbt!="sing")
+            {
+                cout << "Possible strategies for inter community edge insertions:" << endl
+                     << "1. ee:   Edit Edge" << endl
+                     << "2. sing: Split to Singletons" << endl
+                     << interinsbt << " given." << endl;
+                throw;
+            }
+            
+            inter_ins_bt = interinsbt;
+            
+            //Inter community edge removal backtracking policy: Edit Edge
+            if(interrembt !="ee")
+            {
+                cout << "Possible strategies for inter community edge removals:" << endl
+                     << "1. ee:   Edit Edge" << endl
+                     << interrembt << " given." << endl;
+                throw;
+            }
+            
+            inter_rem_bt = interrembt;
+            
+            //Intra community edge insertion backtracking policy: Edit Edge or Split to Separation or Split to Singletons
+            if(intrainsbt !="ee" && intrainsbt!="sep" && intrainsbt!="sing")
+            {
+                cout << "Possible strategies for intra community edge insertions:" << endl
+                     << "1. ee:   Edit Edge" << endl
+                     << "2. sep:  Split to Separation" << endl
+                     << "3. sing: Split to Singletons" << endl
+                     << intrainsbt << " given." << endl;
+                throw;
+            }
+            
+            intra_ins_bt = intrainsbt;
+            
+            //Intra community edge removal backtracking policy: Edit Edge or Split to Separation or Split to Singletons
+            if(intrarembt !="ee" && intrarembt!="sep" && intrarembt!="sing")
+            {
+                cout << "Possible strategies for intra community edge removals:" << endl
+                     << "1. ee:   Edit Edge" << endl
+                     << "2. sep:  Split to Separation" << endl
+                     << "3. sing: Split to Singletons" << endl
+                     << intrarembt << " given." << endl;
+                throw;
+            }
+            
+            intra_rem_bt = intrarembt;
+            
+            cout << "Backtracking Policies:" << endl
+                 << "Inter Edge Insertion: " << inter_ins_bt << endl
+                 << "Inter Edge Removal: " << inter_rem_bt << endl
+                 << "Intra Edge Insertion: " << intra_ins_bt << endl
+                 << "Intra Edge Removal: " << intra_rem_bt << endl;
         }
         
         void add_batch(const stinger_registered_alg * alg)
@@ -628,13 +707,33 @@ class community_state
                 if(nbrs[u].find(v) != nbrs[u].end())
                 {
                     ne--;
-                    if(find(u).first==find(v).first)
+                    if(find(u).first==find(v).first) //Intra removal
                     {
-                        int64_t parent = find(u).first;
-                        while(find(u).first==find(v).first)
+                        if(intra_rem_bt=="sep" || intra_rem_bt=="sing")
                         {
-                            split(parent);
-                            parent = find(u).first;
+                            int64_t parent = find(u).first;
+                            while(find(u).first==find(v).first)
+                            {
+                                split(parent);
+                                parent = find(u).first;
+                            }
+                        }
+                        
+                        if(intra_rem_bt=="sing")
+                        {
+                            int64_t parent = find(u).first;
+                            while(parent!=u)
+                            {
+                                split(parent);
+                                parent = find(u).first;
+                            }
+                            
+                            parent = find(v).first;
+                            while(parent!=v)
+                            {
+                                split(parent);
+                                parent = find(v).first;
+                            }
                         }
                     }
                     edit_edge(u, v, -1);
@@ -652,6 +751,39 @@ class community_state
                 const int64_t v = ins[i].destination;
                 const int64_t w = ins[i].weight;
                 ne++;
+                
+                bool intra_edge = false;
+                if(find(u).first==find(v).first) //Intra insertion
+                {
+                    intra_edge = true;
+                    if(intra_ins_bt=="sep" || intra_ins_bt=="sing")
+                    {
+                        int64_t parent = find(u).first;
+                        while(find(u).first==find(v).first)
+                        {
+                            split(parent);
+                            parent = find(u).first;
+                        }
+                    }
+                }
+                
+                if(intra_ins_bt=="sing" && intra_edge==true || inter_ins_bt=="sing" && intra_edge==false)
+                {
+                    int64_t parent = find(u).first;
+                    while(parent!=u)
+                    {
+                        split(parent);
+                        parent = find(u).first;
+                    }
+                    
+                    parent = find(v).first;
+                    while(parent!=v)
+                    {
+                        split(parent);
+                        parent = find(v).first;
+                    }
+                }
+                
                 edit_edge(u, v, 1);
             }
         }
