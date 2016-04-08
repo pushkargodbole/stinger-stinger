@@ -14,6 +14,7 @@
 #include "stinger_core/stinger_atomics.h"
 #include "stinger_core/xmalloc.h"
 #include "stinger_core/stinger_error.h"
+#include "stinger_utils/timer.h"
 #include "stinger_net/stinger_alg.h"
 
 //#include "utils.h"
@@ -51,7 +52,7 @@ class community_state
         
         string merge_policy = "match"; //Merge policy for agglomeration [Default: match (Greedy Edge Matching)]
         
-        unordered_map<string, int64_t> Diagnostic;
+        unordered_map<string, double> Diagnostic;
         void ResetDiagnostic(string flag = "init")
         {
             if(Diagnostic.size() == 0)
@@ -63,10 +64,17 @@ class community_state
                 Diagnostic["nsplit"] = 0; //Number of calls to split
                 Diagnostic["nsplitedits"] = 0; //Number of calls to add_adjacency due to split
                 Diagnostic["nedges"] = 0; //Total number of edges in dendogram
+                Diagnostic["split_time"] = 0; //Total time required for split
+                Diagnostic["merge_time"] = 0; //Total time required for merge
+                Diagnostic["editedge_time"] = 0; //Total time required for edit_edge
+                Diagnostic["agglomerate_time"] = 0; //Total time required for agglomerate
+                Diagnostic["match_time"] = 0; //Total time required for matching in agglomerate_match
+                Diagnostic["addbatch_time"] = 0; //Total time required for add_batch
+                Diagnostic["init_time"] = 0; //Total time required for init
             }
             else
             {
-                for (unordered_map<string, int64_t>::iterator it=Diagnostic.begin(); it!=Diagnostic.end(); ++it)
+                for (unordered_map<string, double>::iterator it=Diagnostic.begin(); it!=Diagnostic.end(); ++it)
                 {
                     if(flag == "init" || (flag == "add_batch" && it->first != "nedges")) it->second = 0;
                 }
@@ -186,6 +194,7 @@ class community_state
         
         void edit_edge(int64_t u, int64_t v, int64_t w) // Recursively add an edge of weight w, between vertices u and v from the community graph (w can be negative for deletions)
         {
+            double tstart = timer();
             int64_t upos = parents[u].size()-1;
             int64_t vpos = parents[v].size()-1;
             while(upos >= 0 && vpos >= 0)
@@ -229,10 +238,12 @@ class community_state
                 }
             }
             Diagnostic["nedit_edge"]++;
+            Diagnostic["editedge_time"] += timer() - tstart;
         }
         
         void init(const struct stinger * S) // Initializer
         {
+            double tstart = timer();
             nv = stinger_max_active_vertex(S)+1; // +1, because indices begin at 0 and end at (nv-1)
             time = 0;
             ne = 0;
@@ -283,6 +294,7 @@ class community_state
                 } STINGER_FORALL_EDGES_OF_VTX_END();
             }
             time++;
+            Diagnostic["init_time"] += timer() - tstart;
         }
         
         pair<int64_t, int64_t> find(int64_t v) // Find parent of vertex v
@@ -292,6 +304,7 @@ class community_state
         
         int64_t merge(int64_t u, int64_t v, string flag = "dynamic") // Merge communities u and v. Returns id of parent.
         {
+            double tstart = timer();
             int64_t parent_u = find(u).first;
             int64_t parent_v = find(v).first;
             int64_t parent, child;
@@ -330,11 +343,13 @@ class community_state
             }
             time++;
             Diagnostic["nmerge"]++;
+            Diagnostic["merge_time"] += timer() - tstart;
             return parent;
         }
         
         void split(int64_t u)
         {
+            double tstart = timer();
             int64_t parent_u = find(u).first;
             ASSERT(u, ==, parent_u);
             if(children[u].size()>0)
@@ -357,6 +372,7 @@ class community_state
                 active[child] = 1;
             }
             Diagnostic["nsplit"]++;
+            Diagnostic["split_time"] += timer() - tstart;
         }
         
         double mod(int64_t u) // Modularity contribution by community node u
@@ -556,6 +572,7 @@ class community_state
             bool(*edge_compare_ptr)(const pair<double, pair<int64_t, int64_t> >&, const pair<double, pair<int64_t, int64_t> >&) = edge_compare;
             while(1)
             {
+                double tstart = timer();
                 set<pair<double, pair<int64_t, int64_t> >, bool(*)(const pair<double, pair<int64_t, int64_t> >&, const pair<double, pair<int64_t, int64_t> >&) > edges (edge_compare_ptr);
                 for(int64_t v=0; v<nv; v++)
                 {
@@ -572,7 +589,7 @@ class community_state
                         }
                     }
                 }
-                
+                Diagnostic["match_time"] += timer() - tstart;
                 if(edges.size() == 0) return;
                 
                 set<int64_t> visited_nodes;
@@ -623,9 +640,11 @@ class community_state
         
         void agglomerate(string flag = "dynamic")
         {
+            double tstart = timer();
             if(merge_policy == "nodespan") agglomerate_nodespan(flag);
             if(merge_policy == "match") agglomerate_match(flag);
             if(merge_policy == "bestfirst") agglomerate_bestfirst(flag);
+            Diagnostic["agglomerate_time"] += timer() - tstart;
         }
         
         void set_bt_policy(string interinsbt="ee", string interrembt="ee", string intrainsbt="ee", string intrarembt="sep")
@@ -688,6 +707,7 @@ class community_state
         
         void add_batch(const stinger_registered_alg * alg)
         {
+            double tstart = timer();
             ResetDiagnostic("add_batch");
             for(int64_t v=0; v<nv; v++)
             {
@@ -786,5 +806,6 @@ class community_state
                 
                 edit_edge(u, v, 1);
             }
+            Diagnostic["addbatch_time"] += timer() - tstart;
         }
 };

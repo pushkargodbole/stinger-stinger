@@ -44,6 +44,13 @@ int main(int argc, char *argv[])
     int64_t nedit_edgeedits_s, nedit_edgeedits_d;
     int64_t nmergeedits_s, nmergeedits_d;
     int64_t nsplitedits_s, nsplitedits_d;
+    double split_time_d;
+    double merge_time_s, merge_time_d;
+    double editedge_time_d;
+    double agglomerate_time_s, agglomerate_time_d;
+    double match_time_s, match_time_d;
+    double init_time_s;
+    double addbatch_time_d;
     vector<int64_t> SOC_s;
     vector<int64_t> SOC_d;
     vector<int64_t> Ncoms_s;
@@ -72,6 +79,16 @@ int main(int argc, char *argv[])
     vector<int64_t> Nmergeedits_d;
     vector<int64_t> Nsplitedits_s;
     vector<int64_t> Nsplitedits_d;
+    vector<double> Split_time_d;
+    vector<double> Merge_time_s;
+    vector<double> Merge_time_d;
+    vector<double> Editedge_time_d;
+    vector<double> Agglomerate_time_s;
+    vector<double> Agglomerate_time_d;
+    vector<double> Match_time_s;
+    vector<double> Match_time_d;
+    vector<double> Init_time_s;
+    vector<double> Addbatch_time_d;
     const struct stinger * S;
     int port = 10103;
     string static_merge_policy = "match";
@@ -135,16 +152,12 @@ int main(int argc, char *argv[])
     cout << "--------------- Static init ------------------" << endl;
     tic();
     cstate_s.init(S);
-    //cstate_s.agglomerate_nodespan("static");
-    cstate_s.agglomerate_match("static");
-    //cstate_s.agglomerate_bestfirst("static");
+    cstate_s.agglomerate("static");
     time_s = toc();
     cout << "--------------- Dynamic init ------------------" << endl;
     tic();
     cstate_d.init(S);
-    //cstate_d.agglomerate_nodespan();
-    cstate_d.agglomerate_match();
-    //cstate_d.agglomerate_bestfirst();
+    cstate_d.agglomerate();
     time_d = toc();
     modularity_s = cstate_s.update_mod();
     modularity_d = cstate_d.update_mod();
@@ -174,6 +187,16 @@ int main(int argc, char *argv[])
     nmergeedits_d = cstate_d.Diagnostic["nmergeedits"];
     nsplitedits_s = cstate_s.Diagnostic["nsplitedits"];
     nsplitedits_d = cstate_d.Diagnostic["nsplitedits"];
+    split_time_d = cstate_d.Diagnostic["split_time"];
+    merge_time_s = cstate_s.Diagnostic["merge_time"];
+    merge_time_d = cstate_d.Diagnostic["merge_time"];
+    editedge_time_d = cstate_d.Diagnostic["editedge_time"];
+    agglomerate_time_s = cstate_s.Diagnostic["agglomerate_time"];
+    agglomerate_time_d = cstate_d.Diagnostic["agglomerate_time"];
+    match_time_s = cstate_s.Diagnostic["match_time"];
+    match_time_d = cstate_d.Diagnostic["match_time"];
+    addbatch_time_d = cstate_d.Diagnostic["addbatch_time"];
+    init_time_s = cstate_s.Diagnostic["init_time"];
     cout << "Iter: 0" << endl;
     cout << "Modularity (Static): " << modularity_s << endl;
     cout << "Modularity (Dynamic): " << modularity_d << endl;
@@ -205,6 +228,16 @@ int main(int argc, char *argv[])
     cout << "Nsplit edits (Dynamic): " << nsplitedits_d << endl;
     cout << "Time (Static): " << time_s << endl;
     cout << "Time (Dynamic): " << time_d << endl;
+    cout << "Init time (Static): " << init_time_s << endl;
+    cout << "Add Batch time (Dynamic): " << addbatch_time_d << endl;
+    cout << "Split time (Dynamic): " << split_time_d << endl;
+    cout << "Edit Edge time (Dynamic): " << editedge_time_d << endl;
+    cout << "Agglomerate time (Static): " << agglomerate_time_s << endl;
+    cout << "Agglomerate time (Dynamic): " << agglomerate_time_d << endl;
+    cout << "Match time (Static): " << match_time_s << endl;
+    cout << "Match time (Dynamic): " << match_time_d << endl;
+    cout << "Merge time (Static): " << merge_time_s << endl;
+    cout << "Merge time (Dynamic): " << merge_time_d << endl;
     modularities_s.push_back(modularity_s);
     modularities_d.push_back(modularity_d);
     SOC_s.push_back(soc_s);
@@ -235,6 +268,16 @@ int main(int argc, char *argv[])
     Nsplitedits_d.push_back(nsplitedits_d);
     Time_s.push_back(time_s);
     Time_d.push_back(time_d);
+    Init_time_s.push_back(init_time_s);
+    Addbatch_time_d.push_back(addbatch_time_d);
+    Split_time_d.push_back(split_time_d);
+    Editedge_time_d.push_back(editedge_time_d);
+    Agglomerate_time_s.push_back(agglomerate_time_s);
+    Agglomerate_time_d.push_back(agglomerate_time_d);
+    Match_time_s.push_back(match_time_s);
+    Match_time_d.push_back(match_time_d);
+    Merge_time_s.push_back(merge_time_s);
+    Merge_time_d.push_back(merge_time_d);
     stinger_alg_begin_init(alg);
     {
     } stinger_alg_end_init(alg);
@@ -258,16 +301,12 @@ int main(int argc, char *argv[])
             cout << "--------------- Static ------------------" << endl;
             tic();
             cstate_s.init(S);
-            //cstate_s.agglomerate_nodespan("static");
-            cstate_s.agglomerate_match("static");
-            //cstate_s.agglomerate_bestfirst("static");
+            cstate_s.agglomerate("static");
             time_s = toc();
             cout << "--------------- Dynamic ------------------" << endl;
             tic();
             cstate_d.add_batch(alg);
-            //cstate_d.agglomerate_nodespan();
-            cstate_d.agglomerate_match();
-            //cstate_d.agglomerate_bestfirst();
+            cstate_d.agglomerate();
             time_d = toc();
             modularity_s = cstate_s.update_mod();
             modularity_d = cstate_d.update_mod();
@@ -297,6 +336,16 @@ int main(int argc, char *argv[])
             nmergeedits_d = cstate_d.Diagnostic["nmergeedits"];
             nsplitedits_s = cstate_s.Diagnostic["nsplitedits"];
             nsplitedits_d = cstate_d.Diagnostic["nsplitedits"];
+            split_time_d = cstate_d.Diagnostic["split_time"];
+            merge_time_s = cstate_s.Diagnostic["merge_time"];
+            merge_time_d = cstate_d.Diagnostic["merge_time"];
+            editedge_time_d = cstate_d.Diagnostic["editedge_time"];
+            agglomerate_time_s = cstate_s.Diagnostic["agglomerate_time"];
+            agglomerate_time_d = cstate_d.Diagnostic["agglomerate_time"];
+            match_time_s = cstate_s.Diagnostic["match_time"];
+            match_time_d = cstate_d.Diagnostic["match_time"];
+            addbatch_time_d = cstate_d.Diagnostic["addbatch_time"];
+            init_time_s = cstate_s.Diagnostic["init_time"];
             cout << "Iter: " << n+1 << endl;
             cout << "Modularity (Static): " << modularity_s << endl;
             cout << "Modularity (Dynamic): " << modularity_d << endl;
@@ -328,6 +377,16 @@ int main(int argc, char *argv[])
             cout << "Nsplit edits (Dynamic): " << nsplitedits_d << endl;
             cout << "Time (Static): " << time_s << endl;
             cout << "Time (Dynamic): " << time_d << endl;
+            cout << "Init time (Static): " << init_time_s << endl;
+            cout << "Add Batch time (Dynamic): " << addbatch_time_d << endl;
+            cout << "Split time (Dynamic): " << split_time_d << endl;
+            cout << "Edit Edge time (Dynamic): " << editedge_time_d << endl;
+            cout << "Agglomerate time (Static): " << agglomerate_time_s << endl;
+            cout << "Agglomerate time (Dynamic): " << agglomerate_time_d << endl;
+            cout << "Match time (Static): " << match_time_s << endl;
+            cout << "Match time (Dynamic): " << match_time_d << endl;
+            cout << "Merge time (Static): " << merge_time_s << endl;
+            cout << "Merge time (Dynamic): " << merge_time_d << endl;
             modularities_s.push_back(modularity_s);
             modularities_d.push_back(modularity_d);
             SOC_s.push_back(soc_s);
@@ -358,6 +417,16 @@ int main(int argc, char *argv[])
             Nsplitedits_d.push_back(nsplitedits_d);
             Time_s.push_back(time_s);
             Time_d.push_back(time_d);
+            Init_time_s.push_back(init_time_s);
+            Addbatch_time_d.push_back(addbatch_time_d);
+            Split_time_d.push_back(split_time_d);
+            Editedge_time_d.push_back(editedge_time_d);
+            Agglomerate_time_s.push_back(agglomerate_time_s);
+            Agglomerate_time_d.push_back(agglomerate_time_d);
+            Match_time_s.push_back(match_time_s);
+            Match_time_d.push_back(match_time_d);
+            Merge_time_s.push_back(merge_time_s);
+            Merge_time_d.push_back(merge_time_d);
             
             if(stinger_alg_begin_post(alg))
             {
@@ -371,9 +440,9 @@ int main(int argc, char *argv[])
             break;
         }
     }
-    cout << "Bno. Mod(s) Mod(d) SOC(s) SOC(d) Ncoms(s) Ncoms(d) MaxCs(s) MaxCs(d) MinCs(s) MinCs(d) MeanCs(s) MeanCs(d) StddevCs(s) StddevCs(d) Time(s) Time(d) Nedges(s) Nedges(d) Nedit_edge(s) Nedit_edge(d) Nmerge(s) Nmerge(d) Nsplit(s) Nsplit(d) Nedit_edgeedits(s) Nedit_edgeedits(d) Nmergeedits(s) Nmergeedits(d) Nsplitedits(s) Nsplitedits(d)" << endl;
+    cout << "Bno. Mod(s) Mod(d) SOC(s) SOC(d) Ncoms(s) Ncoms(d) MaxCs(s) MaxCs(d) MinCs(s) MinCs(d) MeanCs(s) MeanCs(d) StddevCs(s) StddevCs(d) Time(s) Time(d) InitTime(s) AddBatchTime(d) SplitTime(d) EditEdgeTime(d) AgglomerateTime(s) AgglomerateTime(d) MatchTime(s) MatchTime(d) MergeTime(s) MergeTime(d) Nedges(s) Nedges(d) Nedit_edge(s) Nedit_edge(d) Nmerge(s) Nmerge(d) Nsplit(s) Nsplit(d) Nedit_edgeedits(s) Nedit_edgeedits(d) Nmergeedits(s) Nmergeedits(d) Nsplitedits(s) Nsplitedits(d)" << endl;
     for(int i=0; i<modularities_s.size(); i++)
     {
-        cout << i << " " << modularities_s[i] << " " << modularities_d[i] << " " << SOC_s[i] << " " << SOC_d[i] << " " << Ncoms_s[i] << " " << Ncoms_d[i] << " " << Max_csize_s[i] << " " << Max_csize_d[i] << " " << Min_csize_s[i] << " " << Min_csize_d[i] << " " << Mean_csize_s[i] << " " << Mean_csize_d[i] << " " << Stddev_csize_s[i] << " " << Stddev_csize_d[i] << " " << Time_s[i] << " " << Time_d[i] << " " << Nedges_s[i] << " " << Nedges_d[i] << " " << Nedit_edge_s[i] << " " << Nedit_edge_d[i] << " " << Nmerge_s[i] << " " << Nmerge_d[i] << " " << Nsplit_s[i] << " " << Nsplit_d[i] << " " << Nedit_edgeedits_s[i] << " " << Nedit_edgeedits_d[i] << " " << Nmergeedits_s[i] << " " << Nmergeedits_d[i] << " " << Nsplitedits_s[i] << " " << Nsplitedits_d[i] << endl;
+        cout << i << " " << modularities_s[i] << " " << modularities_d[i] << " " << SOC_s[i] << " " << SOC_d[i] << " " << Ncoms_s[i] << " " << Ncoms_d[i] << " " << Max_csize_s[i] << " " << Max_csize_d[i] << " " << Min_csize_s[i] << " " << Min_csize_d[i] << " " << Mean_csize_s[i] << " " << Mean_csize_d[i] << " " << Stddev_csize_s[i] << " " << Stddev_csize_d[i] << " " << Time_s[i] << " " << Time_d[i] << " " << Init_time_s[i] << " " << Addbatch_time_d[i] << " " << Split_time_d[i] << " " << Editedge_time_d[i] << " " << Agglomerate_time_s[i] << " " << Agglomerate_time_d[i] << " " << Match_time_s[i] << " " << Match_time_d[i] << " " << Merge_time_s[i] << " " << Merge_time_d[i] << " " << Nedges_s[i] << " " << Nedges_d[i] << " " << Nedit_edge_s[i] << " " << Nedit_edge_d[i] << " " << Nmerge_s[i] << " " << Nmerge_d[i] << " " << Nsplit_s[i] << " " << Nsplit_d[i] << " " << Nedit_edgeedits_s[i] << " " << Nedit_edgeedits_d[i] << " " << Nmergeedits_s[i] << " " << Nmergeedits_d[i] << " " << Nsplitedits_s[i] << " " << Nsplitedits_d[i] << endl;
     }
 }
